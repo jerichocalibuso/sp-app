@@ -10,7 +10,7 @@ import {
 import type { MetaFunction } from "remix";
 import styles from "./tailwind.css";
 import Navbar from "./components/Navbar";
-import Error from "./components/error";
+import Error from "./components/Error";
 import Footer from "./components/Footer";
 
 export function links() {
