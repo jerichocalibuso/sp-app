@@ -5,9 +5,13 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useCatch,
 } from "remix";
 import type { MetaFunction } from "remix";
 import styles from "./tailwind.css";
+import Navbar from "./components/Navbar";
+import Error from "./components/error";
+import Footer from "./components/Footer";
 
 export function links() {
   return [{ rel: "stylesheet", href: styles }];
@@ -27,10 +31,34 @@ export default function App() {
         <Links />
       </head>
       <body>
-        <Outlet />
+        <div>
+          <Navbar />
+          <Outlet />
+          <Footer />
+        </div>
+
         <ScrollRestoration />
         <Scripts />
         {process.env.NODE_ENV === "development" && <LiveReload />}
+      </body>
+    </html>
+  );
+}
+
+export function CatchBoundary() {
+  const caught = useCatch();
+
+  return (
+    <html lang="en">
+      <head>
+        <meta charSet="utf-8" />
+        <Links />
+      </head>
+      <body>
+        <Navbar />
+        <Error />
+        {process.env.NODE_ENV === "development" ? <LiveReload /> : null}
+        <Footer />
       </body>
     </html>
   );
