@@ -189,11 +189,11 @@ export default function IndexPage() {
           <div className="relative">
             <div
               aria-hidden="true"
-              className="hidden absolute w-1/2 h-full bg-gray-100 lg:block"
+              className="absolute hidden h-full w-1/2 bg-gray-100 lg:block"
             />
             <div className="relative bg-gray-100 lg:bg-transparent">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 lg:grid lg:grid-cols-2">
-                <div className="max-w-2xl mx-auto py-24 lg:py-64 lg:max-w-none">
+              <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:grid lg:grid-cols-2 lg:px-8">
+                <div className="mx-auto max-w-2xl py-24 lg:max-w-none lg:py-64">
                   <div className="lg:pr-16">
                     <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl xl:text-6xl">
                       Quality meats at your fingertips
@@ -205,7 +205,7 @@ export default function IndexPage() {
                     <div className="mt-6">
                       <a
                         href="#"
-                        className="inline-block bg-red-600 border border-transparent py-3 px-8 rounded-md font-medium text-white hover:bg-red-700"
+                        className="inline-block rounded-md border border-transparent bg-red-600 py-3 px-8 font-medium text-white hover:bg-red-700"
                       >
                         Start Shopping
                       </a>
@@ -214,11 +214,11 @@ export default function IndexPage() {
                 </div>
               </div>
             </div>
-            <div className="w-full h-48 sm:h-64 lg:absolute lg:top-0 lg:right-0 lg:w-1/2 lg:h-full">
+            <div className="h-48 w-full sm:h-64 lg:absolute lg:top-0 lg:right-0 lg:h-full lg:w-1/2">
               <img
                 src={"images/hero-fresh-meat.jpeg"}
                 alt=""
-                className="w-full h-full object-center object-cover"
+                className="h-full w-full object-cover object-center"
               />
             </div>
           </div>
@@ -226,8 +226,8 @@ export default function IndexPage() {
 
         {/* Bestsellers */}
         <section aria-labelledby="trending-heading" className="bg-white">
-          <div className="py-16 sm:py-24 lg:max-w-7xl lg:mx-auto lg:py-32 lg:px-8">
-            <div className="px-4 flex items-center justify-between sm:px-6 lg:px-0">
+          <div className="py-16 sm:py-24 lg:mx-auto lg:max-w-7xl lg:py-32 lg:px-8">
+            <div className="flex items-center justify-between px-4 sm:px-6 lg:px-0">
               <h2
                 id="trending-heading"
                 className="text-2xl font-extrabold tracking-tight text-gray-900"
@@ -236,29 +236,29 @@ export default function IndexPage() {
               </h2>
               <a
                 href="#"
-                className="hidden sm:block text-sm font-semibold text-red-600 hover:text-red-500"
+                className="hidden text-sm font-semibold text-red-600 hover:text-red-500 sm:block"
               >
                 See everything<span aria-hidden="true"> &rarr;</span>
               </a>
             </div>
 
-            <div className="mt-8 relative">
+            <div className="relative mt-8">
               <div className="relative w-full overflow-x-auto">
                 <ul
                   role="list"
-                  className="mx-4 inline-flex space-x-8 sm:mx-6 lg:mx-0 lg:space-x-0 lg:grid lg:grid-cols-4 lg:gap-x-8"
+                  className="mx-4 inline-flex space-x-8 sm:mx-6 lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-x-8 lg:space-x-0"
                 >
                   {trendingProducts.map((product) => (
                     <li
                       key={product.id}
-                      className="w-64 inline-flex flex-col text-center lg:w-auto "
+                      className="inline-flex w-64 flex-col text-center lg:w-auto "
                     >
                       <div className="group relative">
-                        <div className="w-full bg-gray-200 rounded-md overflow-hidden aspect-w-1 aspect-h-1">
+                        <div className="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-md bg-gray-200">
                           <img
                             src={product.imageSrc}
                             alt={product.imageAlt}
-                            className="w-full h-full object-center object-cover group-hover:opacity-75"
+                            className="h-full w-full object-cover object-center group-hover:opacity-75"
                           />
                         </div>
                         <div className="mt-6">
@@ -268,7 +268,7 @@ export default function IndexPage() {
                               {product.name}
                             </a>
                           </h3>
-                          <p className="mt-1 hover:text-red-600 text-gray-900">
+                          <p className="mt-1 text-gray-900 hover:text-red-600">
                             {product.price}
                           </p>
                         </div>
@@ -292,8 +292,8 @@ export default function IndexPage() {
 
         {/* Categories */}
         <section aria-labelledby="categories-heading" className="bg-gray-100">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="max-w-2xl mx-auto py-16 sm:py-24 lg:py-32 lg:max-w-none">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-2xl py-16 sm:py-24 lg:max-w-none lg:py-32">
               <h2
                 id="categories-heading"
                 className="text-2xl font-extrabold text-gray-900"
@@ -301,14 +301,14 @@ export default function IndexPage() {
                 Categories
               </h2>
 
-              <div className="mt-6 space-y-12 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-x-6">
+              <div className="mt-6 space-y-12 lg:grid lg:grid-cols-3 lg:gap-x-6 lg:space-y-0">
                 {categories.map((category) => (
                   <div key={category.name} className="group relative">
-                    <div className="relative w-full h-80 bg-white rounded-lg overflow-hidden group-hover:opacity-75 sm:aspect-w-2 sm:aspect-h-1 sm:h-64 lg:aspect-w-1 lg:aspect-h-1">
+                    <div className="sm:aspect-w-2 sm:aspect-h-1 lg:aspect-w-1 lg:aspect-h-1 relative h-80 w-full overflow-hidden rounded-lg bg-white group-hover:opacity-75 sm:h-64">
                       <img
                         src={category.imageSrc}
                         alt={category.imageAlt}
-                        className="w-full h-full object-center object-cover"
+                        className="h-full w-full object-cover object-center"
                       />
                     </div>
                     <h3 className="mt-6 text-lg font-semibold text-gray-900 hover:text-red-600">
@@ -328,11 +328,11 @@ export default function IndexPage() {
         <div className="relative overflow-hidden">
           {/* Decorative background image and gradient */}
           <div aria-hidden="true" className="absolute inset-0">
-            <div className="absolute inset-0 max-w-7xl mx-auto overflow-hidden xl:px-8">
+            <div className="absolute inset-0 mx-auto max-w-7xl overflow-hidden xl:px-8">
               <img
                 src="https://tailwindui.com/img/ecommerce-images/home-page-02-sale-full-width.jpg"
                 alt=""
-                className="w-full h-full object-center object-cover"
+                className="h-full w-full object-cover object-center"
               />
             </div>
             <div className="absolute inset-0 bg-white bg-opacity-75" />
@@ -342,22 +342,22 @@ export default function IndexPage() {
           {/* Sale */}
           <section
             aria-labelledby="sale-heading"
-            className="relative max-w-7xl mx-auto pt-32 px-4 flex flex-col items-center text-center sm:px-6 lg:px-8"
+            className="relative mx-auto flex max-w-7xl flex-col items-center px-4 pt-32 text-center sm:px-6 lg:px-8"
           >
-            <div className="max-w-2xl mx-auto lg:max-w-none">
+            <div className="mx-auto max-w-2xl lg:max-w-none">
               <h2
                 id="sale-heading"
                 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl"
               >
                 25% off during our one-time sale
               </h2>
-              <p className="mt-4 max-w-xl mx-auto text-xl text-gray-600">
+              <p className="mx-auto mt-4 max-w-xl text-xl text-gray-600">
                 Most of our products are limited releases that won't come back.
                 Get your favorite items while they're in stock.
               </p>
               <a
                 href="#"
-                className="mt-6 inline-block w-full bg-red-600 border border-transparent rounded-md py-3 px-8 font-medium text-white hover:bg-red-700 hover:pointer sm:w-auto"
+                className="hover:pointer mt-6 inline-block w-full rounded-md border border-transparent bg-red-600 py-3 px-8 font-medium text-white hover:bg-red-700 sm:w-auto"
               >
                 Get access to our one-time sale
               </a>
@@ -367,9 +367,9 @@ export default function IndexPage() {
           {/* Testimonials */}
           <section
             aria-labelledby="testimonial-heading"
-            className="relative py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:py-32 lg:px-8"
+            className="relative mx-auto max-w-7xl py-24 px-4 sm:px-6 lg:py-32 lg:px-8"
           >
-            <div className="max-w-2xl mx-auto lg:max-w-none">
+            <div className="mx-auto max-w-2xl lg:max-w-none">
               <h2
                 id="testimonial-heading"
                 className="text-2xl font-extrabold tracking-tight text-gray-900"
@@ -377,7 +377,7 @@ export default function IndexPage() {
                 What are people saying?
               </h2>
 
-              <div className="mt-16 space-y-16 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-x-8">
+              <div className="mt-16 space-y-16 lg:grid lg:grid-cols-3 lg:gap-x-8 lg:space-y-0">
                 {testimonials.map((testimonial) => (
                   <blockquote key={testimonial.id} className="sm:flex lg:block">
                     <svg
