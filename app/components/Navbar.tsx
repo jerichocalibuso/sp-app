@@ -282,7 +282,7 @@ export default function Example() {
                       <img
                         className="h-8 w-auto"
                         src="/images/logo.svg"
-                        alt=""
+                        alt="Camille Meat Shop Logo"
                       />
                     </a>
                   </div>
@@ -309,7 +309,10 @@ export default function Example() {
                     <button
                       type="button"
                       className="-ml-2 rounded-md bg-white p-2 text-gray-400"
-                      onClick={() => setMobileMenuOpen(true)}
+                      onClick={() => {
+                        console.log("hello");
+                        setMobileMenuOpen(true);
+                      }}
                     >
                       <span className="sr-only">MobileMenuOpen menu</span>
                       <MenuIcon className="h-6 w-6" aria-hidden="true" />

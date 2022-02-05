@@ -14,11 +14,14 @@ import Error from "./components/Error";
 import Footer from "./components/Footer";
 
 export function links() {
-  return [{ rel: "stylesheet", href: styles }];
+  return [
+    { rel: "stylesheet", href: styles },
+    { rel: "icon", type: "image/svg", href: "/images/logo.svg" },
+  ];
 }
 
 export const meta: MetaFunction = () => {
-  return { title: "New Remix App" };
+  return { title: "Camille Meat Shop" };
 };
 
 export default function App() {
@@ -55,10 +58,8 @@ export function CatchBoundary() {
         <Links />
       </head>
       <body>
-        <Navbar />
         <Error />
         {process.env.NODE_ENV === "development" ? <LiveReload /> : null}
-        <Footer />
       </body>
     </html>
   );

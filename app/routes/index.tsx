@@ -24,6 +24,7 @@ import {
   UserIcon,
   XIcon,
 } from "@heroicons/react/outline";
+import { Brand, Category, Product } from "./products";
 
 const navigation = {
   categories: [
@@ -80,53 +81,47 @@ const navigation = {
   pages: [{ name: "Beef", href: "#" }],
 };
 
-const trendingProducts = [
+const trendingProducts: Product[] = [
   {
-    id: 1,
-    name: "Machined Pen",
-    color: "Black",
-    price: "$35",
-    href: "#",
-    imageSrc:
-      "https://tailwindui.com/img/ecommerce-images/home-page-02-product-01.jpg",
-    imageAlt:
-      "Black machined steel pen with hexagonal grip and small white logo at top.",
+    id: 2,
+    imageSrc: "/images/BF-chicken-breast-fillets-860g.jpeg",
+    imageAlt: "BF-chicken-breast-fillets-860g",
+    name: "Chicken Breasts Fillets",
+    weight: "860g",
+    brand: Brand.BOUNTY_FRESH,
+    category: Category.CHICKEN,
+    price: 290,
   },
   {
-    id: 1,
-    name: "Machined Pen",
-    color: "Black",
-    price: "$35",
-    href: "#",
-    imageSrc:
-      "https://tailwindui.com/img/ecommerce-images/home-page-02-product-01.jpg",
-    imageAlt:
-      "Black machined steel pen with hexagonal grip and small white logo at top.",
-  },
-
-  {
-    id: 1,
-    name: "Machined Pen",
-    color: "Black",
-    price: "$35",
-    href: "#",
-    imageSrc:
-      "https://tailwindui.com/img/ecommerce-images/home-page-02-product-01.jpg",
-    imageAlt:
-      "Black machined steel pen with hexagonal grip and small white logo at top.",
+    id: 3,
+    imageSrc: "/images/BF-chicken-breasts-860g.jpeg",
+    imageAlt: "BF-chicken-breasts-860g",
+    name: "Chicken Breasts",
+    weight: "860g",
+    brand: Brand.BOUNTY_FRESH,
+    category: Category.CHICKEN,
+    price: 180,
   },
   {
-    id: 1,
-    name: "Machined Pen",
-    color: "Black",
-    price: "$35",
-    href: "#",
-    imageSrc:
-      "https://tailwindui.com/img/ecommerce-images/home-page-02-product-01.jpg",
-    imageAlt:
-      "Black machined steel pen with hexagonal grip and small white logo at top.",
+    id: 4,
+    imageSrc: "/images/BF-chicken-leg-quarters-860g.jpeg",
+    imageAlt: "BF-chicken-leg-quarters-860g",
+    name: "Chicken Leg Quarters",
+    weight: "860g",
+    brand: Brand.BOUNTY_FRESH,
+    category: Category.CHICKEN,
+    price: 180,
   },
-  // More products...
+  {
+    id: 5,
+    imageSrc: "/images/BF-chicken-nuggets-200g.jpeg",
+    imageAlt: "BF-chicken-nuggets-200g",
+    name: "Chicken Nuggets",
+    weight: "200g",
+    brand: Brand.BOUNTY_FRESH,
+    category: Category.CHICKEN,
+    price: 100,
+  },
 ];
 const categories = [
   {
@@ -189,13 +184,13 @@ export default function IndexPage() {
           <div className="relative">
             <div
               aria-hidden="true"
-              className="absolute hidden h-full w-1/2 bg-gray-100 lg:block"
+              className="absolute hidden h-full w-1/2 bg-gray-50 lg:block"
             />
-            <div className="relative bg-gray-100 lg:bg-transparent">
+            <div className="relative bg-gray-50 lg:bg-transparent">
               <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:grid lg:grid-cols-2 lg:px-8">
-                <div className="mx-auto max-w-2xl py-24 lg:max-w-none lg:py-64">
+                <div className="mx-auto max-w-2xl py-24 md:pt-40 lg:max-w-none lg:py-64">
                   <div className="lg:pr-16">
-                    <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl xl:text-6xl">
+                    <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
                       Quality meats at your fingertips
                     </h1>
                     <p className="mt-4 text-xl text-gray-600">
@@ -205,7 +200,7 @@ export default function IndexPage() {
                     <div className="mt-6">
                       <a
                         href="#"
-                        className="inline-block rounded-md border border-transparent bg-red-600 py-3 px-8 font-medium text-white hover:bg-red-700"
+                        className="inline-block rounded-md border border-transparent bg-red-600 py-3 px-8 font-medium text-white hover:bg-red-700 "
                       >
                         Start Shopping
                       </a>
@@ -214,11 +209,16 @@ export default function IndexPage() {
                 </div>
               </div>
             </div>
-            <div className="h-48 w-full sm:h-64 lg:absolute lg:top-0 lg:right-0 lg:h-full lg:w-1/2">
+            <div className="flex h-48 w-full justify-center sm:h-80 lg:absolute lg:top-0 lg:right-0 lg:h-full lg:w-1/2">
               <img
                 src={"images/hero-fresh-meat.jpeg"}
-                alt=""
+                alt="hero-fresh-meat"
                 className="h-full w-full object-cover object-center"
+              />
+              <img
+                src={"images/hero-fresh-meat2.jpeg"}
+                alt="hero-fresh-meat2"
+                className="h-full w-full object-cover object-center lg:hidden"
               />
             </div>
           </div>
@@ -230,7 +230,7 @@ export default function IndexPage() {
             <div className="flex items-center justify-between px-4 sm:px-6 lg:px-0">
               <h2
                 id="trending-heading"
-                className="text-2xl font-extrabold tracking-tight text-gray-900"
+                className="text-3xl font-extrabold tracking-tight text-gray-900"
               >
                 Bestsellers
               </h2>
@@ -263,13 +263,13 @@ export default function IndexPage() {
                         </div>
                         <div className="mt-6">
                           <h3 className="mt-1 font-semibold text-gray-900 hover:text-red-600">
-                            <a href={product.href}>
+                            <a href={`/products/${product.id}`}>
                               <span className="absolute inset-0 " />
                               {product.name}
                             </a>
                           </h3>
-                          <p className="mt-1 text-gray-900 hover:text-red-600">
-                            {product.price}
+                          <p className="mt-1 text-red-500 hover:text-red-400">
+                            ₱{product.price}
                           </p>
                         </div>
                       </div>
@@ -291,12 +291,12 @@ export default function IndexPage() {
         </section>
 
         {/* Categories */}
-        <section aria-labelledby="categories-heading" className="bg-gray-100">
+        <section aria-labelledby="categories-heading" className="bg-gray-50">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-2xl py-16 sm:py-24 lg:max-w-none lg:py-32">
               <h2
                 id="categories-heading"
-                className="text-2xl font-extrabold text-gray-900"
+                className="text-3xl font-extrabold text-gray-900"
               >
                 Categories
               </h2>
@@ -372,7 +372,7 @@ export default function IndexPage() {
             <div className="mx-auto max-w-2xl lg:max-w-none">
               <h2
                 id="testimonial-heading"
-                className="text-2xl font-extrabold tracking-tight text-gray-900"
+                className="mt-2 text-3xl font-extrabold tracking-tight text-gray-900"
               >
                 What are people saying?
               </h2>

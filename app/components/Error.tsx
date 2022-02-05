@@ -5,11 +5,11 @@ export default function Error() {
         <main className="mx-auto flex w-full max-w-7xl flex-grow flex-col justify-center px-4 sm:px-6 lg:px-8">
           <div className="flex flex-shrink-0 justify-center">
             <a href="/" className="inline-flex">
-              <span className="sr-only">Workflow</span>
+              <span className="sr-only">Camille Meat Shop</span>
               <img
                 className="h-12 w-auto"
-                src="https://tailwindui.com/img/logos/workflow-mark.svg?color=red&shade=600"
-                alt=""
+                src="/images/logo.svg"
+                alt="Camille Meat Shop Logo"
               />
             </a>
           </div>
