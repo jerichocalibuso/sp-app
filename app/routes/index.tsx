@@ -328,32 +328,32 @@ export default function IndexPage() {
         <div className="relative overflow-hidden">
           {/* Decorative background image and gradient */}
           <div aria-hidden="true" className="absolute inset-0">
-            <div className="absolute inset-0 mx-auto max-w-7xl overflow-hidden xl:px-8">
+            <div className="absolute inset-0 mx-auto max-w-full overflow-hidden">
               <img
-                src="https://tailwindui.com/img/ecommerce-images/home-page-02-sale-full-width.jpg"
+                src="images/sale-delivery.jpeg"
                 alt=""
                 className="h-full w-full object-cover object-center"
               />
             </div>
-            <div className="absolute inset-0 bg-white bg-opacity-75" />
+            <div className="absolute inset-0 bg-white bg-opacity-60" />
             <div className="absolute inset-0 bg-gradient-to-t from-white via-white" />
           </div>
 
           {/* Sale */}
           <section
             aria-labelledby="sale-heading"
-            className="relative mx-auto flex max-w-7xl flex-col items-center px-4 pt-32 text-center sm:px-6 lg:px-8"
+            className="relative mx-auto flex max-w-7xl flex-col items-center px-4 pt-32 text-center sm:px-6 lg:px-32"
           >
             <div className="mx-auto max-w-2xl lg:max-w-none">
               <h2
                 id="sale-heading"
                 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl"
               >
-                25% off during our one-time sale
+                Free delivery for orders worth{" "}
+                <span className="text-red-600">₱500</span> and above*
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-xl text-gray-600">
-                Most of our products are limited releases that won't come back.
-                Get your favorite items while they're in stock.
+                *within Dasmariñas City and General Trias, Cavite
               </p>
               <a
                 href="#"
