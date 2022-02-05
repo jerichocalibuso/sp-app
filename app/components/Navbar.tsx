@@ -151,7 +151,7 @@ export default function Example() {
       <Transition.Root show={mobileMenuOpen} as={Fragment}>
         <Dialog
           as="div"
-          className="fixed inset-0 z-40 flex lg:hidden"
+          className="fixed inset-0 z-50 flex lg:hidden"
           onClose={setMobileMenuOpen}
         >
           <Transition.Child
@@ -176,7 +176,7 @@ export default function Example() {
             leaveTo="-translate-x-full"
           >
             <div className="relative flex w-full max-w-xs flex-col overflow-y-auto bg-white pb-12 shadow-xl">
-              <div className="flex px-4 pt-5 pb-2">
+              <div className="flex px-4 pt-5 pb-2.5">
                 <button
                   type="button"
                   className="-m-2 inline-flex items-center justify-center rounded-md p-2 text-gray-400"
@@ -271,17 +271,17 @@ export default function Example() {
       <header className="relative">
         <nav aria-label="Top">
           {/* Secondary navigation */}
-          <div className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-white">
+          <div className="fixed top-0 left-0 right-0 z-40 border-b border-gray-200 bg-white">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <div className="">
                 <div className="flex h-16 items-center justify-between">
                   {/* Logo (lg+) */}
                   <div className="hidden lg:flex lg:items-center">
                     <a href="/">
-                      <span className="sr-only">Workflow</span>
+                      <span className="sr-only">Camille Meat Shop</span>
                       <img
                         className="h-8 w-auto"
-                        src="https://tailwindui.com/img/logos/workflow-mark.svg?color=red&shade=600"
+                        src="/images/logo.svg"
                         alt=""
                       />
                     </a>
@@ -326,13 +326,9 @@ export default function Example() {
                   </div>
 
                   {/* Logo (lg-) */}
-                  <a href="#" className="lg:hidden">
-                    <span className="sr-only">Workflow</span>
-                    <img
-                      src="https://tailwindui.com/img/logos/workflow-mark.svg?color=red&shade=600"
-                      alt=""
-                      className="h-8 w-auto"
-                    />
+                  <a href="/" className="lg:hidden">
+                    <span className="sr-only">Camille Meat Shop</span>
+                    <img src="/images/logo.svg" alt="" className="h-8 w-auto" />
                   </a>
 
                   <div className="flex flex-1 items-center justify-end">

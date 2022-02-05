@@ -38,11 +38,7 @@ export default function Footer() {
         <div className="border-t border-gray-200">
           <div className="pt-16 pb-20">
             <div className="md:flex md:justify-center">
-              <img
-                src="https://tailwindui.com/img/logos/workflow-mark.svg?color=red&shade=600"
-                alt=""
-                className="h-8 w-auto"
-              />
+              <img src="/images/logo.svg" alt="" className="h-8 w-auto" />
             </div>
             <div className="mx-auto mt-16 max-w-5xl xl:grid xl:grid-cols-2 xl:gap-8">
               <div className="grid grid-cols-2 gap-8 xl:col-span-2">
