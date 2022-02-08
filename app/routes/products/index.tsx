@@ -426,62 +426,241 @@ const products: Product[] = [
     category: Category.CHICKEN,
     price: 100,
   },
+  // imageSrc: "/images/x.jpeg",
+  // imageAlt: "x",
+  // name: "",
+  // weight: "500g",
+  // brand: Brand.CAMILLE,
+  // category: Category.BEEF,
+  // price: 100,
+
+  {
+    id: 41,
+    imageSrc: "/images/Camille-beef-cubes-500g.jpeg",
+    imageAlt: "Camille-beef-cubes-500g",
+    name: "Beef Cubes",
+    weight: "500g",
+    brand: Brand.CAMILLE,
+    category: Category.BEEF,
+    price: 100,
+  },
+  {
+    id: 42,
+    imageSrc: "/images/Camille-beef-new-york-steak-500g.jpeg",
+    imageAlt: "Camille-beef-new-york-steak-500g",
+    name: "Beef New York Steak",
+    weight: "500g",
+    brand: Brand.CAMILLE,
+    category: Category.BEEF,
+    price: 100,
+  },
+  {
+    id: 43,
+    imageSrc: "/images/Camille-beef-sakiyuki-500g.jpeg",
+    imageAlt: "Camille-beef-sakiyuki-500g",
+    name: "Beef Sakiyuki",
+    weight: "500g",
+    brand: Brand.CAMILLE,
+    category: Category.BEEF,
+    price: 100,
+  },
+  {
+    id: 44,
+    imageSrc: "/images/Camille-beef-shanks-500g.jpeg",
+    imageAlt: "Camille-beef-shanks-500g",
+    name: "Beef Shanks",
+    weight: "500g",
+    brand: Brand.CAMILLE,
+    category: Category.BEEF,
+    price: 100,
+  },
+  {
+    id: 45,
+    imageSrc: "/images/Camille-beef-strongranoff-500g.jpeg",
+    imageAlt: "Camille-beef-strongranoff-500g",
+    name: "Beef Strongranoff",
+    weight: "500g",
+    brand: Brand.CAMILLE,
+    category: Category.BEEF,
+    price: 100,
+  },
+  {
+    id: 46,
+    imageSrc: "/images/Camille-ground-beef-500g.jpeg",
+    imageAlt: "Camille-ground-beef-500g",
+    name: "Ground Beef",
+    weight: "500g",
+    brand: Brand.CAMILLE,
+    category: Category.BEEF,
+    price: 100,
+  },
+  {
+    id: 47,
+    imageSrc: "/images/Camille-ground-pork.jpeg",
+    imageAlt: "Camille-ground-pork",
+    name: "Ground Pork",
+    weight: "500g",
+    brand: Brand.CAMILLE,
+    category: Category.PORK,
+    price: 100,
+  },
+  {
+    id: 48,
+    imageSrc: "/images/Camille-pata-slice-500g.jpeg",
+    imageAlt: "Camille-pata-slice-500g",
+    name: "Pata Slice",
+    weight: "500g",
+    brand: Brand.CAMILLE,
+    category: Category.PORK,
+    price: 100,
+  },
+  {
+    id: 49,
+    imageSrc: "/images/Camille-pork-adobo-cut-500g.jpeg",
+    imageAlt: "Camille-pork-adobo-cut-500g",
+    name: "Pork Adobo Cut",
+    weight: "500g",
+    brand: Brand.CAMILLE,
+    category: Category.PORK,
+    price: 100,
+  },
+  {
+    id: 50,
+    imageSrc: "/images/Camille-pork-bacon-cut-500g.jpeg",
+    imageAlt: "Camille-pork-bacon-cut-500g",
+    name: "Pork Bacon Cut",
+    weight: "500g",
+    brand: Brand.CAMILLE,
+    category: Category.PORK,
+    price: 100,
+  },
+  {
+    id: 51,
+    imageSrc: "/images/Camille-pork-belly-slice-500g.jpeg",
+    imageAlt: "Camille-pork-belly-slice-500g",
+    name: "Pork Belly Slice",
+    weight: "500g",
+    brand: Brand.CAMILLE,
+    category: Category.PORK,
+    price: 100,
+  },
+  {
+    id: 52,
+    imageSrc: "/images/Camille-pork-sinigang-cut-500g.jpeg",
+    imageAlt: "Camille-pork-sinigang-cut-500g",
+    name: "Pork Sinigang Cut",
+    weight: "500g",
+    brand: Brand.CAMILLE,
+    category: Category.PORK,
+    price: 100,
+  },
+  {
+    id: 53,
+    imageSrc: "/images/Camille-porkchop-500g.jpeg",
+    imageAlt: "Camille-porkchop-500g",
+    name: "Pork Chop",
+    weight: "500g",
+    brand: Brand.CAMILLE,
+    category: Category.PORK,
+    price: 100,
+  },
 ];
 
-export default function Example() {
+const returnTitle = ({
+  onlyCategory,
+}: {
+  onlyCategory: Category | null;
+}): string => {
+  if (onlyCategory === null) {
+    return "All Products";
+  } else if (onlyCategory === Category.CHICKEN) {
+    return "Chicken Products";
+  } else if (onlyCategory === Category.PORK) {
+    return "Pork Products";
+  } else if (onlyCategory === Category.BEEF) {
+    return "Beef Products";
+  } else {
+    return "All Products";
+  }
+};
+
+export default function ProductsPage({
+  onlyCategory,
+}: {
+  onlyCategory: Category | null;
+}) {
   return (
     <main className="bg-white">
       <div className="mx-auto max-w-2xl py-16 px-4 sm:py-24 sm:px-6 lg:max-w-7xl lg:px-8">
         <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-          All Products
+          {returnTitle({ onlyCategory })}
         </h1>
 
         <div className="mt-8 grid grid-cols-1 gap-y-12 sm:grid-cols-2 sm:gap-x-6 lg:grid-cols-4 xl:gap-x-8">
-          {products.map((product) => (
-            <div key={product.id}>
-              <div className="relative">
-                <div className="relative h-72 w-full overflow-hidden rounded-lg">
-                  <img
-                    src={product.imageSrc}
-                    alt={product.imageAlt}
-                    className="h-full w-full object-cover object-center"
-                  />
-                </div>
-                <div className="relative mt-4 h-16">
-                  <div className="flex justify-between ">
-                    <h3 className="text-md font-medium text-gray-900 hover:text-red-500">
-                      <a href={`/products/${product.id}`}>{product.name}</a>
-                    </h3>
-                    <div className="ml-2">
-                      <p className="relative text-lg font-semibold text-red-500">
-                        ₱{product.price}
+          {products
+            .sort((a, b) => b.id - a.id)
+            .map((product) => {
+              if (
+                onlyCategory === Category.CHICKEN &&
+                product.category !== Category.CHICKEN
+              )
+                return;
+              else if (
+                onlyCategory === Category.BEEF &&
+                product.category !== Category.BEEF
+              )
+                return;
+              else if (
+                onlyCategory === Category.PORK &&
+                product.category !== Category.PORK
+              )
+                return;
+              return (
+                <div key={product.id}>
+                  <div className="relative">
+                    <div className="relative h-72 w-full overflow-hidden rounded-lg">
+                      <img
+                        src={product.imageSrc}
+                        alt={product.imageAlt}
+                        className="h-full w-full object-cover object-center"
+                      />
+                    </div>
+                    <div className="relative mt-4 h-16">
+                      <div className="flex justify-between ">
+                        <h3 className="text-md font-medium text-gray-900 hover:text-red-500">
+                          <a href={`/products/${product.id}`}>{product.name}</a>
+                        </h3>
+                        <div className="ml-2">
+                          <p className="relative text-lg font-semibold text-red-500">
+                            ₱{product.price}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="relative text-sm font-semibold text-gray-500">
+                        {product.brand}
                       </p>
                     </div>
+                    <a href={`/products/${product.id}`}>
+                      <div className="absolute inset-x-0 top-0  flex h-72 cursor-pointer items-end justify-end overflow-hidden rounded-lg p-4">
+                        <div
+                          aria-hidden="true"
+                          className="absolute inset-x-0 bottom-0 h-36  bg-gradient-to-t from-neutral-500 to-white opacity-10  hover:opacity-5"
+                        />
+                      </div>
+                    </a>
                   </div>
-                  <p className="relative text-sm font-semibold text-gray-500">
-                    {product.brand}
-                  </p>
+                  {/* ADD KILOS INPUT */}
+                  <div className="mt-6">
+                    <a
+                      href="#"
+                      className="relative flex items-center justify-center rounded-md border border-transparent bg-red-500 py-2 px-8 text-sm font-medium text-white hover:bg-red-400"
+                    >
+                      Add to cart<span className="sr-only"></span>
+                    </a>
+                  </div>
                 </div>
-                <a href={`/products/${product.id}`}>
-                  <div className="absolute inset-x-0 top-0  flex h-72 cursor-pointer items-end justify-end overflow-hidden rounded-lg p-4">
-                    <div
-                      aria-hidden="true"
-                      className="absolute inset-x-0 bottom-0 h-36  bg-gradient-to-t from-neutral-500 to-white opacity-10  hover:opacity-5"
-                    />
-                  </div>
-                </a>
-              </div>
-              {/* ADD KILOS INPUT */}
-              <div className="mt-6">
-                <a
-                  href="#"
-                  className="relative flex items-center justify-center rounded-md border border-transparent bg-red-500 py-2 px-8 text-sm font-medium text-white hover:bg-red-400"
-                >
-                  Add to cart<span className="sr-only"></span>
-                </a>
-              </div>
-            </div>
-          ))}
+              );
+            })}
         </div>
       </div>
     </main>

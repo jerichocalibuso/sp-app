@@ -130,7 +130,7 @@ const categories = [
       "https://tailwindui.com/img/ecommerce-images/home-page-02-edition-01.jpg",
     imageAlt:
       "Desk with leather desk pad, walnut desk organizer, wireless keyboard and mouse, and porcelain mug.",
-    href: "#",
+    href: "/chicken",
   },
   {
     name: "Pork",
@@ -138,40 +138,36 @@ const categories = [
       "https://tailwindui.com/img/ecommerce-images/home-page-02-edition-02.jpg",
     imageAlt:
       "Wood table with porcelain mug, leather journal, brass pen, leather key ring, and a houseplant.",
-    href: "#",
+    href: "/pork",
   },
   {
     name: "Beef",
     imageSrc:
       "https://tailwindui.com/img/ecommerce-images/home-page-02-edition-03.jpg",
     imageAlt: "Collection of four insulated travel bottles on wooden shelf.",
-    href: "#",
+    href: "/beef",
   },
 ];
 const testimonials = [
   {
     id: 1,
     quote:
-      "My order arrived super quickly. The product is even better than I hoped it would be. Very happy customer over here!",
-    attribution: "Sarah Peters, New Orleans",
+      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia nobis autem, impedit dignissimos quidem cumque libero ea quam porro tempore.",
+    attribution: "Sherrilyn Reyes, Camella Lessandra",
   },
   {
     id: 2,
     quote:
-      "I had to return a purchase that didn’t fit. The whole process was so simple that I ended up ordering two new items!",
-    attribution: "Kelly McPherson, Chicago",
+      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia nobis autem, impedit dignissimos quidem cumque libero ea quam porro tempore.",
+    attribution: "Jason Orqueza, Parklane Country Homes",
   },
   {
     id: 3,
     quote:
-      "Now that I’m on holiday for the summer, I’ll probably order a few more shirts. It’s just so convenient, and I know the quality will always be there.",
-    attribution: "Chris Paul, Phoenix",
+      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia nobis autem, impedit dignissimos quidem cumque libero ea quam porro tempore.",
+    attribution: "Evan Angelo Monreal, Lumina Homes",
   },
 ];
-
-function classNames(...classes: any) {
-  return classes.filter(Boolean).join(" ");
-}
 
 export default function IndexPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -199,10 +195,10 @@ export default function IndexPage() {
                     </p>
                     <div className="mt-6">
                       <a
-                        href="#"
+                        href="/products"
                         className="inline-block rounded-md border border-transparent bg-red-600 py-3 px-8 font-medium text-white hover:bg-red-700 "
                       >
-                        Start Shopping
+                        Start shopping
                       </a>
                     </div>
                   </div>
@@ -235,10 +231,10 @@ export default function IndexPage() {
                 Bestsellers
               </h2>
               <a
-                href="#"
+                href="/products"
                 className="hidden text-sm font-semibold text-red-600 hover:text-red-500 sm:block"
               >
-                See everything<span aria-hidden="true"> &rarr;</span>
+                See all products<span aria-hidden="true"> &rarr;</span>
               </a>
             </div>
 
@@ -284,7 +280,7 @@ export default function IndexPage() {
                 href="#"
                 className="text-sm font-semibold text-red-600 hover:text-red-500"
               >
-                See everything<span aria-hidden="true"> &rarr;</span>
+                See all products<span aria-hidden="true"> &rarr;</span>
               </a>
             </div>
           </div>
@@ -353,13 +349,13 @@ export default function IndexPage() {
                 <span className="text-red-600">₱500</span> and above*
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-xl text-gray-600">
-                *within Dasmariñas City and General Trias, Cavite
+                *within the 35 km radius of Parklane Country Homes
               </p>
               <a
-                href="#"
+                href="/products"
                 className="hover:pointer mt-6 inline-block w-full rounded-md border border-transparent bg-red-600 py-3 px-8 font-medium text-white hover:bg-red-700 sm:w-auto"
               >
-                Get access to our one-time sale
+                Start shopping
               </a>
             </div>
           </section>
