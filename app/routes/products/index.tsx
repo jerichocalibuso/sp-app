@@ -22,7 +22,7 @@ export type Product = {
   weight: string;
 };
 
-const products: Product[] = [
+export const products: Product[] = [
   {
     id: 1,
     imageSrc: "/images/BF-chicken-breaded-skin-350g.jpeg",
