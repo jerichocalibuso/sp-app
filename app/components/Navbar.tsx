@@ -161,7 +161,7 @@ export default function Example() {
                       <span className='sr-only'>Camille Meat Shop</span>
                       <img
                         className='h-8 w-auto'
-                        src='/images/logo.svg'
+                        src='/images/logo.png'
                         alt='Camille Meat Shop Logo'
                       />
                     </Link>
@@ -211,7 +211,7 @@ export default function Example() {
                   {/* Logo (lg-) */}
                   <Link to='/' className='lg:hidden'>
                     <span className='sr-only'>Camille Meat Shop</span>
-                    <img src='/images/logo.svg' alt='' className='h-8 w-auto' />
+                    <img src='/images/logo.png' alt='' className='h-8 w-auto' />
                   </Link>
 
                   <div className='flex flex-1 items-center justify-end'>
