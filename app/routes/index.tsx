@@ -215,11 +215,6 @@ export default function IndexPage() {
                 alt='hero-fresh-meat'
                 className='h-full w-full object-cover object-center'
               />
-              <img
-                src={'images/hero-fresh-meat2.jpg'}
-                alt='hero-fresh-meat2'
-                className='h-full w-full object-cover object-center lg:hidden'
-              />
             </div>
           </div>
         </div>
