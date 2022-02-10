@@ -9,224 +9,339 @@
     // ...
     plugins: [
       // ...
+      require('@tailwindcss/typography'),
       require('@tailwindcss/aspect-ratio'),
     ],
   }
   ```
 */
-import { useState } from "react";
+import { useState } from 'react'
+import { Disclosure, RadioGroup, Tab } from '@headlessui/react'
+import { MinusIcon, StarIcon } from '@heroicons/react/solid'
 import {
-  CheckIcon,
-  QuestionMarkCircleIcon,
-  StarIcon,
-} from "@heroicons/react/solid";
-import { RadioGroup } from "@headlessui/react";
-import { ShieldCheckIcon } from "@heroicons/react/outline";
-import { useParams } from "remix";
-import { products } from ".";
+  HeartIcon,
+  MinusSmIcon,
+  PlusIcon,
+  PlusSmIcon,
+} from '@heroicons/react/outline'
+import { useParams } from 'remix'
+import { products } from '.'
+import invariant from 'tiny-invariant'
+import { useLocation } from 'react-router'
+
+export type Breadcrumb = {
+  label: string
+  route?: string
+}
 
 const product = {
-  name: "Everyday Ruck Snack",
-  href: "#",
-  price: "$220",
-  description:
-    "Don't compromise on snack-carrying capacity with this lightweight and spacious bag. The drawstring top keeps all your favorite chips, crisps, fries, biscuits, crackers, and cookies secure.",
-  imageSrc:
-    "https://tailwindui.com/img/ecommerce-images/product-page-04-featured-product-shot.jpg",
-  imageAlt:
-    "Model wearing light green backpack with black canvas straps and front zipper pouch.",
+  name: 'Zip Tote Basket',
+  price: '$140',
+  rating: 4,
   breadcrumbs: [
-    { id: 1, name: "Travel", href: "#" },
-    { id: 2, name: "Bags", href: "#" },
+    { id: 1, name: 'Women', href: '#' },
+    { id: 2, name: 'Clothing', href: '#' },
   ],
-  sizes: [
-    { name: "18L", description: "Perfect for a reasonable amount of snacks." },
-    { name: "20L", description: "Enough room for a serious amount of snacks." },
+  images: [
+    {
+      id: 1,
+      name: 'Angled view',
+      src: 'https://tailwindui.com/img/ecommerce-images/product-page-03-product-01.jpg',
+      alt: 'Angled front view with bag zipped and handles upright.',
+    },
+    // More images...
   ],
-};
+  colors: [
+    {
+      name: 'Washed Black',
+      bgColor: 'bg-gray-700',
+      selectedColor: 'ring-gray-700',
+    },
+    { name: 'White', bgColor: 'bg-white', selectedColor: 'ring-gray-400' },
+    {
+      name: 'Washed Gray',
+      bgColor: 'bg-gray-500',
+      selectedColor: 'ring-gray-500',
+    },
+  ],
+  description: `
+    <p>The Zip Tote Basket is the perfect midpoint between shopping tote and comfy backpack. With convertible straps, you can hand carry, should sling, or backpack this convenient and spacious bag. The zip top and durable canvas construction keeps your goods protected for all-day use.</p>
+  `,
+  details: [
+    {
+      name: 'Storage Information',
+      items: [
+        'Multiple strap configurations',
+        'Spacious interior with top zip',
+        'Leather handle and tabs',
+        'Interior dividers',
+        'Stainless strap loops',
+        'Double stitched construction',
+        'Water-resistant',
+      ],
+    },
+    {
+      name: 'Delivery Information',
+      items: [
+        'Multiple strap configurations',
+        'Spacious interior with top zip',
+        'Leather handle and tabs',
+        'Interior dividers',
+        'Stainless strap loops',
+        'Double stitched construction',
+        'Water-resistant',
+      ],
+    },
+    {
+      name: 'Promos',
+      items: [
+        'Multiple strap configurations',
+        'Spacious interior with top zip',
+        'Leather handle and tabs',
+        'Interior dividers',
+        'Stainless strap loops',
+        'Double stitched construction',
+        'Water-resistant',
+      ],
+    },
+    // More sections...
+  ],
+}
 
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(" ");
+function classNames(...classes: any) {
+  return classes.filter(Boolean).join(' ')
 }
 
 export default function Example() {
-  const { id } = useParams();
-  const product = products.find((p) => p.id === Number(id));
+  const [selectedColor, setSelectedColor] = useState(product.colors[0])
+
+  const { id } = useParams()
+  const prod = products.find((p) => p.id === Number(id))
+  invariant(prod, 'error')
+  const location = useLocation()
+  console.log(`location: ${JSON.stringify(location, null, 2)}`)
+  const breads: Breadcrumb[] = [
+    { label: 'All Products', route: '/products' },
+    { label: prod.category, route: `/${prod.category.toLowerCase()}` },
+  ]
 
   return (
-    <div className="bg-white">
-      <div className="mx-auto max-w-2xl py-16 px-4 sm:py-24 sm:px-6 lg:grid lg:max-w-7xl lg:grid-cols-2 lg:gap-x-8 lg:px-8">
-        {/* Product details */}
-        <div className="lg:max-w-lg lg:self-end">
-          <nav aria-label="Breadcrumb">
-            <ol role="list" className="flex items-center space-x-2">
-              {/* {product?.breadcrumbs.map((breadcrumb, breadcrumbIdx) => (
-                <li key={breadcrumb.id}>
-                  <div className="flex items-center text-sm">
-                    <a
-                      href={breadcrumb.href}
-                      className="font-medium text-gray-500 hover:text-gray-900"
-                    >
-                      {breadcrumb.name}
-                    </a>
-                    {breadcrumbIdx !== product?.breadcrumbs.length - 1 ? (
-                      <svg
-                        viewBox="0 0 20 20"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="currentColor"
-                        aria-hidden="true"
-                        className="ml-2 h-5 w-5 flex-shrink-0 text-gray-300"
-                      >
-                        <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
-                      </svg>
-                    ) : null}
-                  </div>
-                </li>
-              ))} */}
-            </ol>
-          </nav>
+    <div className='bg-white'>
+      <div className='mx-auto max-w-2xl py-16 px-4 sm:py-24 sm:px-6 lg:max-w-7xl lg:px-8'>
+        <nav
+          aria-label='Breadcrumb'
+          className='mx-auto mt-8 mb-8 max-w-7xl lg:mt-0'
+        >
+          <ol role='list' className='flex items-center'>
+            {breads.map((breadcrumb) => (
+              <li key={breadcrumb.label}>
+                <div className='flex items-center'>
+                  <a
+                    href={breadcrumb.route}
+                    className=' text-sm font-medium text-gray-900 hover:text-red-600'
+                  >
+                    {breadcrumb.label}
+                  </a>
+                  <svg
+                    aria-hidden='true'
+                    width='24'
+                    height='24'
+                    fill='none'
+                    className='mx-2 flex-none text-gray-300'
+                  >
+                    <path
+                      d='M10.75 8.75l3.5 3.25-3.5 3.25'
+                      stroke='currentColor'
+                      strokeWidth='1.5'
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                    ></path>
+                  </svg>
+                </div>
+              </li>
+            ))}
+            <li className='text-sm'>
+              <a
+                href='#'
+                aria-current='page'
+                className='font-medium text-red-400 hover:text-red-600'
+              >
+                {prod.name}
+              </a>
+            </li>
+          </ol>
+        </nav>
+        <div className='lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8'>
+          {/* Image gallery */}
+          {/* <Tab.Group as='div' className='flex flex-col-reverse'> */}
+          {/* Image selector */}
+          {/* <div className='mx-auto mt-6 hidden w-full max-w-2xl sm:block lg:max-w-none'>
+              <Tab.List className='grid grid-cols-4 gap-6'>
+                {product.images.map((image) => (
+                  <Tab
+                    key={image.id}
+                    className='relative flex h-24 cursor-pointer items-center justify-center rounded-md bg-white text-sm font-medium uppercase text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring focus:ring-opacity-50 focus:ring-offset-4'
+                  >
+                    {({ selected }) => (
+                      <>
+                        <span className='sr-only'>{image.name}</span>
+                        <span className='absolute inset-0 overflow-hidden rounded-md'>
+                          <img
+                            src={image.src}
+                            alt=''
+                            className='h-full w-full object-cover object-center'
+                          />
+                        </span>
+                        <span
+                          className={classNames(
+                            selected ? 'ring-indigo-500' : 'ring-transparent',
+                            'pointer-events-none absolute inset-0 rounded-md ring-2 ring-offset-2'
+                          )}
+                          aria-hidden='true'
+                        />
+                      </>
+                    )}
+                  </Tab>
+                ))}
+              </Tab.List>
+            </div> */}
 
-          <div className="mt-4">
-            <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-              {product?.name}
-            </h1>
-          </div>
+          {/* <Tab.Panels className='aspect-w-1 aspect-h-1 w-full'></Tab.Panels>
+          </Tab.Group> */}
 
-          <section aria-labelledby="information-heading" className="mt-4">
-            <h2 id="information-heading" className="sr-only">
-              Product information
-            </h2>
-
-            <div className="flex items-center space-x-4">
-              <p className="text-lg text-red-500 sm:text-xl">
-                ₱{product?.price}
-              </p>
-
-              {/* <div className="ml-4 border-l border-gray-300 pl-4">
-               
-                 
-              </div> */}
-              <div className="flex items-center">
-                <p className="mr-2 text-sm text-gray-500">
-                  In stock and ready to deliver
-                </p>
-                <CheckIcon
-                  className="h-5 w-5 flex-shrink-0 text-green-500"
-                  aria-hidden="true"
-                />
-              </div>
-            </div>
-
-            <div className="mt-4 space-y-6">
-              {/* <p className="text-base text-gray-500">{product?.description}</p> */}
-            </div>
-          </section>
-        </div>
-
-        {/* Product image */}
-        <div className="mt-10 lg:col-start-2 lg:row-span-2 lg:mt-0 lg:self-center">
-          <div className="aspect-w-1 aspect-h-1 overflow-hidden rounded-lg">
+          <div className='flex flex-col-reverse'>
             <img
-              src={product?.imageSrc}
-              alt={product?.imageAlt}
-              className="h-full w-full object-cover object-center"
+              src={prod.imageSrc}
+              alt={prod.imageAlt}
+              className='h-full w-full object-cover object-center sm:rounded-lg'
             />
           </div>
-        </div>
 
-        {/* Product form */}
-        <div className="mt-10 lg:col-start-1 lg:row-start-2 lg:max-w-lg lg:self-start">
-          <section aria-labelledby="options-heading">
-            <h2 id="options-heading" className="sr-only">
-              Product options
-            </h2>
+          {/* Product info */}
+          <div className='mt-10 px-4 sm:mt-16 sm:px-0 lg:mt-0'>
+            <h1 className='text-4xl font-extrabold tracking-tight text-gray-900'>
+              {prod.name}
+            </h1>
 
-            <form>
-              <div className="sm:flex sm:justify-between">
-                {/* Size selector */}
-                {/* <RadioGroup value={selectedSize} onChange={setSelectedSize}>
-                  <RadioGroup.Label className="block text-sm font-medium text-gray-700">
-                    Size
-                  </RadioGroup.Label>
-                  <div className="mt-1 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    {product.sizes.map((size) => (
-                      <RadioGroup.Option
-                        as="div"
-                        key={size.name}
-                        value={size}
-                        className={({ active }) =>
-                          classNames(
-                            active ? "ring-2 ring-indigo-500" : "",
-                            "relative block cursor-pointer rounded-lg border border-gray-300 p-4 focus:outline-none"
-                          )
-                        }
-                      >
-                        {({ active, checked }) => (
-                          <>
-                            <RadioGroup.Label
-                              as="p"
-                              className="text-base font-medium text-gray-900"
-                            >
-                              {size.name}
-                            </RadioGroup.Label>
-                            <RadioGroup.Description
-                              as="p"
-                              className="mt-1 text-sm text-gray-500"
-                            >
-                              {size.description}
-                            </RadioGroup.Description>
-                            <div
-                              className={classNames(
-                                active ? "border" : "border-2",
-                                checked
-                                  ? "border-indigo-500"
-                                  : "border-transparent",
-                                "pointer-events-none absolute -inset-px rounded-lg"
-                              )}
-                              aria-hidden="true"
-                            />
-                          </>
-                        )}
-                      </RadioGroup.Option>
-                    ))}
-                  </div>
-                </RadioGroup> */}
-              </div>
-              <div className="mt-4">
-                <a
-                  href="#"
-                  className="group inline-flex text-sm text-gray-500 hover:text-gray-700"
-                >
-                  <span>What size should I buy?</span>
-                  <QuestionMarkCircleIcon
-                    className="ml-2 h-5 w-5 flex-shrink-0 text-gray-400 group-hover:text-gray-500"
-                    aria-hidden="true"
+            <div className='mt-3'>
+              <h2 className='sr-only'>Product information</h2>
+              <p className='text-3xl font-semibold text-red-500'>
+                ₱{prod.price}{' '}
+              </p>
+            </div>
+
+            <div className='mt-6'>
+              <h3 className='sr-only'>Description</h3>
+
+              <p className='mb-2 text-base font-medium text-gray-900'>
+                {prod.weight ? `${prod.weight} per quantity` : null}
+              </p>
+              <p className='space-y-6 text-base text-gray-700'>
+                {prod.description}
+              </p>
+            </div>
+
+            <form className='mt-6'>
+              {/* Quantity */}
+              <div>
+                <h3 className='text-md mb-2 font-medium text-gray-900'>
+                  Quantity
+                </h3>
+
+                <span className='relative inline-flex rounded-md shadow-sm'>
+                  <button
+                    type='button'
+                    className='relative inline-flex items-center rounded-l-md border border-gray-300 bg-white px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500'
+                  >
+                    <span className='sr-only'>Previous</span>
+                    <MinusSmIcon className='h-5 w-5' aria-hidden='true' />
+                  </button>
+                  <label htmlFor='quantity' className='sr-only'>
+                    Quantity
+                  </label>
+                  <input
+                    name='quantity'
+                    id='quantity'
+                    className='flex w-16 border border-gray-300 px-2 text-center shadow-sm  sm:text-sm'
+                    placeholder='1'
                   />
-                </a>
+
+                  <button
+                    type='button'
+                    className='relative -ml-px inline-flex items-center rounded-r-md border border-gray-300 bg-white px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500'
+                  >
+                    <span className='sr-only'>Next</span>
+                    <PlusSmIcon className='h-5 w-5' aria-hidden='true' />
+                  </button>
+                </span>
               </div>
-              <div className="mt-10">
+
+              <div className='sm:flex-col1 mt-10 flex'>
                 <button
-                  type="submit"
-                  className="flex w-full items-center justify-center rounded-md border border-transparent bg-red-500 py-3 px-8 text-base font-medium text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-50"
+                  type='submit'
+                  className='flex max-w-xs flex-1 items-center justify-center rounded-md border border-transparent bg-red-500 py-3 px-8 text-base font-medium text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:ring-offset-gray-50 sm:w-full'
                 >
                   Add to bag
                 </button>
               </div>
-              {/* <div className="mt-6 text-center">
-                <a href="#" className="group inline-flex text-base font-medium">
-                  <ShieldCheckIcon
-                    className="mr-2 h-6 w-6 flex-shrink-0 text-gray-400 group-hover:text-gray-500"
-                    aria-hidden="true"
-                  />
-                  <span className="text-gray-500 hover:text-gray-700">
-                    Freshness Guarantee
-                  </span>
-                </a>
-              </div> */}
             </form>
-          </section>
+
+            <section aria-labelledby='details-heading' className='mt-12'>
+              <h2 id='details-heading' className='sr-only'>
+                Additional details
+              </h2>
+
+              <div className='divide-y divide-gray-200 border-t'>
+                {product.details.map((detail) => (
+                  <Disclosure as='div' key={detail.name}>
+                    {({ open }) => (
+                      <>
+                        <h3>
+                          <Disclosure.Button className='group relative flex w-full items-center justify-between py-6 text-left'>
+                            <span
+                              className={classNames(
+                                open
+                                  ? 'text-red-500 group-hover:text-red-600'
+                                  : 'text-gray-900',
+                                'text-sm font-medium'
+                              )}
+                            >
+                              {detail.name}
+                            </span>
+                            <span className='ml-6 flex items-center'>
+                              {open ? (
+                                <MinusSmIcon
+                                  className='block h-6 w-6 text-red-500 group-hover:text-red-600'
+                                  aria-hidden='true'
+                                />
+                              ) : (
+                                <PlusSmIcon
+                                  className='block h-6 w-6 text-gray-400 group-hover:text-gray-500'
+                                  aria-hidden='true'
+                                />
+                              )}
+                            </span>
+                          </Disclosure.Button>
+                        </h3>
+                        <Disclosure.Panel
+                          as='div'
+                          className='prose prose-sm pb-6'
+                        >
+                          <ul role='list'>
+                            {detail.items.map((item) => (
+                              <li key={item}>{item}</li>
+                            ))}
+                          </ul>
+                        </Disclosure.Panel>
+                      </>
+                    )}
+                  </Disclosure>
+                ))}
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     </div>
-  );
+  )
 }

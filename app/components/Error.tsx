@@ -1,17 +1,19 @@
+import { Link } from "remix";
+
 export default function Error() {
   return (
     <>
       <div className="mt-16 flex min-h-full flex-col bg-white pt-16 pb-12">
         <main className="mx-auto flex w-full max-w-7xl flex-grow flex-col justify-center px-4 sm:px-6 lg:px-8">
           <div className="flex flex-shrink-0 justify-center">
-            <a href="/" className="inline-flex">
+            <Link to="/" className="inline-flex">
               <span className="sr-only">Camille Meat Shop</span>
               <img
                 className="h-12 w-auto"
                 src="/images/logo.svg"
                 alt="Camille Meat Shop Logo"
               />
-            </a>
+            </Link>
           </div>
           <div className="py-16">
             <div className="text-center">
@@ -25,12 +27,12 @@ export default function Error() {
                 Sorry, we couldn’t find the page you’re looking for.
               </p>
               <div className="mt-6">
-                <a
-                  href="/"
+                <Link
+                  to="/"
                   className="text-base font-medium text-red-600 hover:text-red-500"
                 >
                   Go back home<span aria-hidden="true"> &rarr;</span>
-                </a>
+                </Link>
               </div>
             </div>
           </div>

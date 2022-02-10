@@ -1,3 +1,5 @@
+import { Link } from "remix";
+
 /* This example requires Tailwind CSS v2.0+ */
 const orders = [
   {
@@ -263,13 +265,13 @@ export default function Example() {
                       <dd className="sm:mt-1">{order.total}</dd>
                     </div>
                   </dl>
-                  <a
-                    href={order.invoiceHref}
+                  <Link
+                    to={order.invoiceHref}
                     className="mt-6 flex w-full items-center justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:mt-0 sm:w-auto"
                   >
                     View Invoice
                     <span className="sr-only">for order {order.number}</span>
-                  </a>
+                  </Link>
                 </div>
 
                 <table className="mt-4 w-full text-gray-500 sm:mt-6">
@@ -329,11 +331,11 @@ export default function Example() {
                           {product.status}
                         </td>
                         <td className="whitespace-nowrap py-6 text-right font-medium">
-                          <a href={product.href} className="text-indigo-600">
+                          <Link to={product.href} className="text-indigo-600">
                             View
                             <span className="hidden lg:inline"> Product</span>
                             <span className="sr-only">, {product.name}</span>
-                          </a>
+                          </Link>
                         </td>
                       </tr>
                     ))}

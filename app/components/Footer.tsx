@@ -1,3 +1,5 @@
+import { Link } from "remix";
+
 const footerNavigation = {
   products: [
     { name: "All Products", href: "#" },
@@ -54,12 +56,12 @@ export default function Footer() {
                     <ul role="list" className="mt-6 space-y-6">
                       {footerNavigation.products.map((item) => (
                         <li key={item.name} className="text-sm">
-                          <a
-                            href={item.href}
+                          <Link
+                            to={item.href}
                             className="text-gray-500 hover:text-gray-600"
                           >
                             {item.name}
-                          </a>
+                          </Link>
                         </li>
                       ))}
                     </ul>
@@ -71,12 +73,12 @@ export default function Footer() {
                     <ul role="list" className="mt-6 space-y-6">
                       {footerNavigation.customerService.map((item) => (
                         <li key={item.name} className="text-sm">
-                          <a
-                            href={item.href}
+                          <Link
+                            to={item.href}
                             className="text-gray-500 hover:text-gray-600"
                           >
                             {item.name}
-                          </a>
+                          </Link>
                         </li>
                       ))}
                     </ul>
@@ -90,12 +92,12 @@ export default function Footer() {
                     <ul role="list" className="mt-6 space-y-6">
                       {footerNavigation.company.map((item) => (
                         <li key={item.name} className="text-sm">
-                          <a
-                            href={item.href}
+                          <Link
+                            to={item.href}
                             className="text-gray-500 hover:text-gray-600"
                           >
                             {item.name}
-                          </a>
+                          </Link>
                         </li>
                       ))}
                     </ul>
@@ -105,12 +107,12 @@ export default function Footer() {
                     <ul role="list" className="mt-6 space-y-6">
                       {footerNavigation.legal.map((item) => (
                         <li key={item.name} className="text-sm">
-                          <a
-                            href={item.href}
+                          <Link
+                            to={item.href}
                             className="text-gray-500 hover:text-gray-600"
                           >
                             {item.name}
-                          </a>
+                          </Link>
                         </li>
                       ))}
                     </ul>
@@ -169,12 +171,12 @@ export default function Footer() {
                 <p className="mt-2 text-gray-200">
                   Did you sign up to the newsletter? If so, use the keyword we
                   sent you to get access.{" "}
-                  <a
-                    href="#"
+                  <Link
+                    to="#"
                     className="whitespace-nowrap font-bold text-white hover:text-gray-200"
                   >
                     Go now<span aria-hidden="true"> &rarr;</span>
-                  </a>
+                  </Link>
                 </p>
               </div>
             </div>
@@ -191,13 +193,13 @@ export default function Footer() {
           <div className="mt-4 flex items-center justify-center md:mt-0">
             <div className="flex space-x-8">
               {footerNavigation.bottomLinks.map((item) => (
-                <a
+                <Link
                   key={item.name}
-                  href={item.href}
+                  to={item.href}
                   className="text-sm text-gray-500 hover:text-gray-600"
                 >
                   {item.name}
-                </a>
+                </Link>
               ))}
             </div>
           </div>
