@@ -353,7 +353,7 @@ export default function IndexPage() {
                 <span className='text-red-600'>₱500</span> and above*
               </h2>
               <p className='mx-auto mt-4 max-w-xl text-xl text-gray-600'>
-                *within the 35 km radius of Parklane Country Homes
+                *within the 3.3 km radius of Parklane Country Homes
               </p>
               <Link
                 to='/products'
