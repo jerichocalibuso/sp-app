@@ -2,32 +2,32 @@ import { Link } from 'remix'
 
 const footerNavigation = {
   products: [
-    { name: 'All Products', href: '#' },
-    { name: 'Chicken', href: '#' },
-    { name: 'Pork', href: '#' },
-    { name: 'Beef', href: '#' },
+    { name: 'All Products', href: '/products' },
+    { name: 'Chicken', href: '/chicken' },
+    { name: 'Pork', href: '/pork' },
+    { name: 'Beef', href: '/beef' },
   ],
   customerService: [
-    { name: 'Contact', href: '#' },
-    { name: 'Shipping', href: '#' },
-    { name: 'Returns', href: '#' },
-    { name: 'Warranty', href: '#' },
+    { name: 'Contact', href: '#footer' },
+    { name: 'Shipping', href: '#footer' },
+    { name: 'Returns', href: '#footer' },
+    { name: 'Warranty', href: '#footer' },
   ],
   company: [
-    { name: 'Who we are', href: '#' },
-    { name: 'Careers', href: '#' },
-    { name: 'Terms & Conditions', href: '#' },
-    { name: 'Privacy', href: '#' },
+    { name: 'Who we are', href: '#footer' },
+    { name: 'Careers', href: '#footer' },
+    { name: 'Terms & Conditions', href: '#footer' },
+    { name: 'Privacy', href: '#footer' },
   ],
   legal: [
-    { name: 'Terms of Service', href: '#' },
-    { name: 'Return Policy', href: '#' },
-    { name: 'Privacy Policy', href: '#' },
-    { name: 'Delivery Policy', href: '#' },
+    { name: 'Terms of Service', href: '#footer' },
+    { name: 'Return Policy', href: '#footer' },
+    { name: 'Privacy Policy', href: '#footer' },
+    { name: 'Delivery Policy', href: '#footer' },
   ],
   bottomLinks: [
-    { name: 'Privacy', href: '#' },
-    { name: 'Terms', href: '#' },
+    { name: 'Privacy', href: '#footer' },
+    { name: 'Terms', href: '#footer' },
   ],
 }
 export default function Footer() {
@@ -64,7 +64,7 @@ export default function Footer() {
                         <li key={item.name} className='text-sm'>
                           <Link
                             to={item.href}
-                            className='text-gray-500 hover:text-gray-600'
+                            className='text-gray-500 hover:text-red-500'
                           >
                             {item.name}
                           </Link>
@@ -79,12 +79,12 @@ export default function Footer() {
                     <ul role='list' className='mt-6 space-y-6'>
                       {footerNavigation.customerService.map((item) => (
                         <li key={item.name} className='text-sm'>
-                          <Link
-                            to={item.href}
-                            className='text-gray-500 hover:text-gray-600'
+                          <a
+                            href={item.href}
+                            className='text-gray-500 hover:text-red-500'
                           >
                             {item.name}
-                          </Link>
+                          </a>
                         </li>
                       ))}
                     </ul>
@@ -98,12 +98,12 @@ export default function Footer() {
                     <ul role='list' className='mt-6 space-y-6'>
                       {footerNavigation.company.map((item) => (
                         <li key={item.name} className='text-sm'>
-                          <Link
-                            to={item.href}
-                            className='text-gray-500 hover:text-gray-600'
+                          <a
+                            href={item.href}
+                            className='text-gray-500 hover:text-red-500'
                           >
                             {item.name}
-                          </Link>
+                          </a>
                         </li>
                       ))}
                     </ul>
@@ -113,12 +113,12 @@ export default function Footer() {
                     <ul role='list' className='mt-6 space-y-6'>
                       {footerNavigation.legal.map((item) => (
                         <li key={item.name} className='text-sm'>
-                          <Link
-                            to={item.href}
-                            className='text-gray-500 hover:text-gray-600'
+                          <a
+                            href={item.href}
+                            className='text-gray-500 hover:text-red-500'
                           >
                             {item.name}
-                          </Link>
+                          </a>
                         </li>
                       ))}
                     </ul>
@@ -142,7 +142,7 @@ export default function Footer() {
                 <Link
                   key={item.name}
                   to={item.href}
-                  className='text-sm text-gray-500 hover:text-gray-600'
+                  className='text-sm text-gray-500 hover:text-red-500'
                 >
                   {item.name}
                 </Link>
