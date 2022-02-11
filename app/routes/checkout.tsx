@@ -296,7 +296,7 @@ export default function Example() {
                           <h4 className='text-lg'>
                             <a
                               href={`/products/${product.id}`}
-                              className='font-medium text-gray-700 hover:text-gray-800'
+                              className='font-medium text-gray-700 hover:text-red-800'
                             >
                               {product.name}
                             </a>
@@ -312,7 +312,7 @@ export default function Example() {
                         <div className='ml-4 flow-root flex-shrink-0'>
                           <button
                             type='button'
-                            className='-m-2.5 flex items-center justify-center bg-white p-2.5 text-gray-400 hover:text-gray-500'
+                            className='-m-2.5 flex items-center justify-center bg-white p-2.5 text-gray-400 hover:text-red-500'
                           >
                             <span className='sr-only'>Remove</span>
                             <TrashIcon className='h-5 w-5' aria-hidden='true' />
