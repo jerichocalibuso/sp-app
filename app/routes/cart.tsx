@@ -18,6 +18,7 @@ import {
   CheckIcon,
   ClockIcon,
   QuestionMarkCircleIcon,
+  TrashIcon,
   XIcon,
 } from '@heroicons/react/solid'
 import { Link } from 'remix'
@@ -63,7 +64,7 @@ const products = [
   },
 ]
 
-const prod: Product[] = [
+export const prod: Product[] = [
   {
     id: 18,
     imageSrc: '/images/BF-premium-chicken.jpeg',
@@ -84,18 +85,6 @@ const prod: Product[] = [
     weight: '500g',
     brand: Brand.CAMILLE,
     category: Category.BEEF,
-    price: 100,
-    description:
-      'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Alias cumque nihil atque quae inventore. Aliquam cupiditate repudiandae suscipit corporis natus.',
-  },
-  {
-    id: 47,
-    imageSrc: '/images/Camille-ground-pork.jpeg',
-    imageAlt: 'Camille-ground-pork',
-    name: 'Ground Pork',
-    weight: '500g',
-    brand: Brand.CAMILLE,
-    category: Category.PORK,
     price: 100,
     description:
       'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Alias cumque nihil atque quae inventore. Aliquam cupiditate repudiandae suscipit corporis natus.',
@@ -161,7 +150,7 @@ export default function Example() {
                             className='-m-2 inline-flex p-2 pt-2.5 text-gray-400 hover:text-red-500'
                           >
                             <span className='sr-only'>Remove</span>
-                            <XIcon className='h-5 w-5' aria-hidden='true' />
+                            <TrashIcon className='h-5 w-5' aria-hidden='true' />
                           </button>
                         </div>
                       </div>
@@ -204,7 +193,7 @@ export default function Example() {
                   </a>
                 </dt>
                 <dd className='text-right text-sm font-medium text-gray-900 '>
-                  <p className='line-through'>₱500</p>
+                  <p className='line-through'>₱50</p>
                 </dd>
               </div>
               <p className='text-right text-sm font-medium text-gray-900'>
@@ -215,7 +204,7 @@ export default function Example() {
                 <dt className='text-base font-medium text-gray-900'>
                   Total amount
                 </dt>
-                <dd className='text-base font-medium text-gray-900'>₱1000</dd>
+                <dd className='text-base font-medium text-red-500'>₱1000</dd>
               </div>
             </dl>
 

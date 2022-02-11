@@ -16,22 +16,14 @@
 */
 import { useState } from 'react'
 import { RadioGroup } from '@headlessui/react'
-import { CheckCircleIcon, TrashIcon } from '@heroicons/react/solid'
-
-const products = [
-  {
-    id: 1,
-    title: 'Basic Tee',
-    href: '#',
-    price: '$32.00',
-    color: 'Black',
-    size: 'Large',
-    imageSrc:
-      'https://tailwindui.com/img/ecommerce-images/checkout-page-02-product-01.jpg',
-    imageAlt: "Front of men's Basic Tee in black.",
-  },
-  // More products...
-]
+import {
+  CheckCircleIcon,
+  CreditCardIcon,
+  TrashIcon,
+} from '@heroicons/react/solid'
+import { CashIcon } from '@heroicons/react/outline'
+import { prod } from './cart'
+import { Quantity } from '~/components/Quantity'
 
 const paymentMethods = [
   { id: 'gcash', title: 'GCash', imageSrc: '/images/gcash-logo.png' },
@@ -49,6 +41,7 @@ export default function Example() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(
     paymentMethods[0]
   )
+  const products = prod
 
   return (
     <div className='bg-gray-50'>
@@ -199,7 +192,7 @@ export default function Example() {
                 onChange={setSelectedPaymentMethod}
               >
                 <RadioGroup.Label className='text-lg font-medium text-gray-900'>
-                  Delivery method
+                  Payment method
                 </RadioGroup.Label>
 
                 <div className='mt-4 grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4'>
@@ -210,7 +203,7 @@ export default function Example() {
                       className={({ checked, active }) =>
                         classNames(
                           checked ? 'border-transparent' : 'border-gray-300',
-                          active ? 'ring-2 ring-indigo-500' : '',
+                          active ? 'ring-2 ring-green-500' : '',
                           'relative flex cursor-pointer rounded-lg border bg-white p-4 shadow-sm focus:outline-none'
                         )
                       }
@@ -218,10 +211,16 @@ export default function Example() {
                       {({ checked, active }) => (
                         <>
                           <div className='flex flex-1'>
-                            <div className='flex flex-col'>
+                            <div className='flex items-center'>
+                              {paymentMethod.id === 'card' && (
+                                <CreditCardIcon className=' mr-2 w-10 text-green-500' />
+                              )}
+                              {paymentMethod.id === 'cod' && (
+                                <CashIcon className=' mr-2 w-8 text-green-500' />
+                              )}
                               <RadioGroup.Label
                                 as='span'
-                                className='block text-base font-medium text-gray-900'
+                                className='flex text-base font-medium text-gray-900'
                               >
                                 {paymentMethod?.imageSrc ? (
                                   <img
@@ -249,7 +248,7 @@ export default function Example() {
                           </div>
                           {checked ? (
                             <CheckCircleIcon
-                              className='h-5 w-5 text-indigo-600'
+                              className='h-5 w-5 text-green-500'
                               aria-hidden='true'
                             />
                           ) : null}
@@ -257,7 +256,7 @@ export default function Example() {
                             className={classNames(
                               active ? 'border' : 'border-2',
                               checked
-                                ? 'border-indigo-500'
+                                ? 'border-green-500'
                                 : 'border-transparent',
                               'pointer-events-none absolute -inset-px rounded-lg'
                             )}
@@ -287,27 +286,27 @@ export default function Example() {
                       <img
                         src={product.imageSrc}
                         alt={product.imageAlt}
-                        className='w-20 rounded-md'
+                        className='w-40 rounded-md'
                       />
                     </div>
 
-                    <div className='ml-6 flex flex-1 flex-col'>
+                    <div className='ml-6 flex flex-1 flex-col pt-4'>
                       <div className='flex'>
                         <div className='min-w-0 flex-1'>
-                          <h4 className='text-sm'>
+                          <h4 className='text-lg'>
                             <a
-                              href={product.href}
+                              href={`/products/${product.id}`}
                               className='font-medium text-gray-700 hover:text-gray-800'
                             >
-                              {product.title}
+                              {product.name}
                             </a>
                           </h4>
-                          <p className='mt-1 text-sm text-gray-500'>
-                            {product.color}
+                          <p className='text-md mt-1 text-red-500'>
+                            ₱{product.price}
                           </p>
-                          <p className='mt-1 text-sm text-gray-500'>
-                            {product.size}
-                          </p>
+                          <div className='mt-2 '>
+                            <Quantity />
+                          </div>
                         </div>
 
                         <div className='ml-4 flow-root flex-shrink-0'>
@@ -321,31 +320,7 @@ export default function Example() {
                         </div>
                       </div>
 
-                      <div className='flex flex-1 items-end justify-between pt-2'>
-                        <p className='mt-1 text-sm font-medium text-gray-900'>
-                          {product.price}
-                        </p>
-
-                        <div className='ml-4'>
-                          <label htmlFor='quantity' className='sr-only'>
-                            Quantity
-                          </label>
-                          <select
-                            id='quantity'
-                            name='quantity'
-                            className='rounded-md border border-gray-300 text-left text-base font-medium text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm'
-                          >
-                            <option value={1}>1</option>
-                            <option value={2}>2</option>
-                            <option value={3}>3</option>
-                            <option value={4}>4</option>
-                            <option value={5}>5</option>
-                            <option value={6}>6</option>
-                            <option value={7}>7</option>
-                            <option value={8}>8</option>
-                          </select>
-                        </div>
-                      </div>
+                      <div className='flex flex-1 items-end justify-between pt-2'></div>
                     </div>
                   </li>
                 ))}
@@ -353,28 +328,28 @@ export default function Example() {
               <dl className='space-y-6 border-t border-gray-200 py-6 px-4 sm:px-6'>
                 <div className='flex items-center justify-between'>
                   <dt className='text-sm'>Subtotal</dt>
-                  <dd className='text-sm font-medium text-gray-900'>$64.00</dd>
+                  <dd className='text-sm font-medium text-gray-900'>₱1000</dd>
                 </div>
                 <div className='flex items-center justify-between'>
-                  <dt className='text-sm'>Delivery</dt>
-                  <dd className='text-sm font-medium text-gray-900'>$5.00</dd>
-                </div>
-                <div className='flex items-center justify-between'>
-                  <dt className='text-sm'>Taxes</dt>
-                  <dd className='text-sm font-medium text-gray-900'>$5.52</dd>
-                </div>
-                <div className='flex items-center justify-between border-t border-gray-200 pt-6'>
-                  <dt className='text-base font-medium'>Total</dt>
-                  <dd className='text-base font-medium text-gray-900'>
-                    $75.52
+                  <dt className='text-sm'>Delivery fee</dt>
+                  <dd className='text-sm font-medium text-gray-900  line-through'>
+                    ₱50
                   </dd>
+                </div>
+                <p className='text-right text-sm font-medium text-gray-900'>
+                  Free delivery promo applied
+                </p>
+
+                <div className='flex items-center justify-between border-t border-gray-200 pt-6'>
+                  <dt className='text-base font-medium'>Total amount</dt>
+                  <dd className='text-base font-medium text-red-500'>₱1000</dd>
                 </div>
               </dl>
 
               <div className='border-t border-gray-200 py-6 px-4 sm:px-6'>
                 <button
                   type='submit'
-                  className='w-full rounded-md border border-transparent bg-indigo-600 py-3 px-4 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-50'
+                  className='w-full rounded-md border border-transparent bg-red-500 py-3 px-4 text-base font-medium text-white shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-50'
                 >
                   Confirm order
                 </button>
