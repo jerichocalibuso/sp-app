@@ -20,6 +20,7 @@ import {
   QuestionMarkCircleIcon,
   XIcon,
 } from '@heroicons/react/solid'
+import { Link } from 'remix'
 import { Quantity } from '~/components/Quantity'
 import { Brand, Category, Product } from './products'
 
@@ -219,12 +220,11 @@ export default function Example() {
             </dl>
 
             <div className='mt-6'>
-              <button
-                type='submit'
-                className='w-full rounded-md border border-transparent bg-red-500 py-3 px-4 text-base font-medium text-white shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-50'
-              >
-                Checkout
-              </button>
+              <Link to='/checkout'>
+                <button className='w-full rounded-md border border-transparent bg-red-500 py-3 px-4 text-base font-medium text-white shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-50'>
+                  Checkout
+                </button>
+              </Link>
             </div>
           </section>
         </form>
