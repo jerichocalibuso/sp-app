@@ -248,7 +248,7 @@ export default function Example() {
 
                       <div className='flow-root'>
                         <Link
-                          to='#'
+                          to='/cart'
                           className='group -m-2 flex items-center p-2'
                         >
                           <ShoppingCartIcon

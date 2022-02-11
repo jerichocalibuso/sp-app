@@ -33,7 +33,7 @@ const footerNavigation = {
 export default function Footer() {
   return (
     <footer aria-labelledby='footer-heading' className='bg-white'>
-      <h2 id='footer-heading' className='sr-only'>
+      <h2 id='footer' className='sr-only'>
         Footer
       </h2>
       <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
