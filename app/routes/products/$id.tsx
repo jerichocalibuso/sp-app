@@ -119,8 +119,7 @@ export default function Example() {
   const { id } = useParams()
   const prod = products.find((p) => p.id === Number(id))
   invariant(prod, 'error')
-  const location = useLocation()
-  console.log(`location: ${JSON.stringify(location, null, 2)}`)
+
   const breads: Breadcrumb[] = [
     { label: 'All Products', route: '/products' },
     { label: prod.category, route: `/${prod.category.toLowerCase()}` },
