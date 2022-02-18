@@ -49,7 +49,6 @@ import {
   OfficeBuildingIcon,
   SearchIcon,
 } from '@heroicons/react/solid'
-import Graph from '~/components/Graph'
 
 const navigation = [
   { name: 'Home', href: '#', icon: HomeIcon, current: true },
@@ -191,11 +190,11 @@ export default function Example() {
               <h2 className='text-xl font-bold leading-6 text-gray-900'>
                 Overview
               </h2>
-              <div className='mt-4 flex justify-between'>
+              {/* <div className='mt-4 flex justify-between'>
                 <div className='h-52 w-full'>
                   <Graph />
                 </div>
-              </div>
+              </div> */}
               <div className='mt-5 grid grid-cols-1 divide-y divide-gray-200 overflow-hidden rounded-lg bg-white shadow md:grid-cols-3 md:divide-y-0 md:divide-x'>
                 {/* Card */}
                 {cards.map((card) => (
