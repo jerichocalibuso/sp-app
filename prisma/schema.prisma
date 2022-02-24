@@ -1,0 +1,92 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["dataProxy"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  RIDER
+  CUSTOMER
+  GUEST
+}
+
+model User {
+  id            String    @id @default(uuid())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  role          Role
+  username      String?   @unique
+  password      String?
+  contactNumber String?
+  name          String?
+  addresses     Address[]
+  orders        Order[]
+}
+
+model Address {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  User        User?    @relation(fields: [userId], references: [id])
+  userId      String?
+  houseNumber String?
+  streetName  String?
+  barangay    String?
+  city        String?
+  province    String?
+
+}
+
+enum Status {
+  PACKAGING
+  OUT_FOR_DELIVERY
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentOption {
+  COD
+  CARD
+  GCASH
+  PAYMAYA
+  GRABPAY
+}
+
+model Order {
+  id               String        @id @default(uuid())
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  User             User?         @relation(fields: [userId], references: [id])
+  userId           String?
+  amount           Int
+  status           Status
+  paymentOption    PaymentOption
+  paymentReference String?
+  products         Product[]
+
+}
+
+enum Category {
+  PORK
+  CHICKEN
+  BEEF
+}
+
+model Product {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Order     Order?   @relation(fields: [orderId], references: [id])
+  orderId   String?
+  imageUrl  String?
+  name      String   @unique
+  category  Category
+}
