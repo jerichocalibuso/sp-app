@@ -5,11 +5,16 @@
   "license": "",
   "sideEffects": false,
   "scripts": {
-    "build": "cross-env NODE_ENV=production remix build",
-    "dev:css": "tailwindcss --output ./app/styles/tailwind.css --watch",
     "dev:app": "remix dev",
+    "dev:css": "tailwindcss --output ./app/tailwind.css --watch",
     "dev": "pm2-dev pm2.config.js",
-    "postinstall": "remix setup node"
+    "build:app": "remix build",
+    "build:css": "tailwindcss --output ./app/tailwind.css --minify",
+    "build": "npm run build:css && npm run build:app",
+    "postinstall": "remix setup node",
+    "postbuild": "npm run db:migrate deploy",
+    "start": "HOST=0.0.0.0 remix-serve api/_build",
+    "db:migrate": "prisma migrate"
   },
   "dependencies": {
     "@headlessui/react": "^1.4.3",
