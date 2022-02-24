@@ -1,4 +1,5 @@
-import { ActionFunction, Form, LoaderFunction } from 'remix'
+import { Form } from '@remix-run/react'
+import { ActionFunction } from '@remix-run/server-runtime'
 import { authenticator } from '~/services/auth.server'
 
 /*
@@ -17,6 +18,30 @@ import { authenticator } from '~/services/auth.server'
   }
   ```
 */
+
+// // Second, we need to export an action function, here we will use the
+// // `authenticator.authenticate method`
+export let action: ActionFunction = async ({ request }) => {
+  // we call the method with the name of the strategy we want to use and the
+  // request object, optionally we pass an object with the URLs we want the user
+  // to be redirected to after a success or a failure
+  await authenticator.authenticate('user-pass', request, {
+    successRedirect: '/',
+    failureRedirect: '/login',
+  })
+  return null
+}
+
+// // Finally, we can export a loader function where we check if the user is
+// // authenticated with `authenticator.isAuthenticated` and redirect to the
+// // dashboard if it is or return null if it's not
+// export let loader: LoaderFunction = async ({ request }) => {
+//   // If the user is already authenticated redirect to /dashboard directly
+//   return await authenticator.isAuthenticated(request, {
+//     successRedirect: '/',
+//   })
+// }
+
 export default function Example() {
   return (
     <>
@@ -170,7 +195,7 @@ export default function Example() {
                       type='submit'
                       className='flex w-full justify-center rounded-md border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
                     >
-                      Sign
+                      Sign in
                     </button>
                   </div>
                 </Form>
@@ -188,26 +213,4 @@ export default function Example() {
       </div>
     </>
   )
-}
-
-// Second, we need to export an action function, here we will use the
-// `authenticator.authenticate method`
-export let action: ActionFunction = async ({ request }) => {
-  // we call the method with the name of the strategy we want to use and the
-  // request object, optionally we pass an object with the URLs we want the user
-  // to be redirected to after a success or a failure
-  return await authenticator.authenticate('user-pass', request, {
-    successRedirect: '/',
-    failureRedirect: '/login',
-  })
-}
-
-// Finally, we can export a loader function where we check if the user is
-// authenticated with `authenticator.isAuthenticated` and redirect to the
-// dashboard if it is or return null if it's not
-export let loader: LoaderFunction = async ({ request }) => {
-  // If the user is already authenticated redirect to /dashboard directly
-  return await authenticator.isAuthenticated(request, {
-    successRedirect: '/dashboard',
-  })
 }

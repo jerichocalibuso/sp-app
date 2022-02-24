@@ -43,5 +43,6 @@ authenticator.use(
 
     // And return the user as the Authenticator expects it
     return user
-  })
+  }),
+  'user-pass'
 )
