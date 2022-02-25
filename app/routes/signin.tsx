@@ -3,6 +3,13 @@ import { ActionFunction, LoaderFunction } from '@remix-run/server-runtime'
 import { authenticator } from '~/services/auth.server'
 import { Link } from 'remix'
 
+import { SocialsProvider } from 'remix-auth-socials'
+
+interface SocialsButtonProps {
+  provider: SocialsProvider
+  label: string
+}
+
 /*
   This example requires Tailwind CSS v2.0+ 
   
@@ -43,6 +50,48 @@ export let loader: LoaderFunction = async ({ request }) => {
   })
 }
 
+const FacebookIcon = () => (
+  <svg
+    className='h-5 w-5'
+    aria-hidden='true'
+    fill='currentColor'
+    viewBox='0 0 20 20'
+  >
+    <path
+      fillRule='evenodd'
+      d='M20 10c0-5.523-4.477-10-10-10S0 4.477 0 10c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V10h2.54V7.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V10h2.773l-.443 2.89h-2.33v6.988C16.343 19.128 20 14.991 20 10z'
+      clipRule='evenodd'
+    />
+  </svg>
+)
+
+const GoogleIcon = () => (
+  <svg
+    className='h-5 w-5'
+    aria-hidden='true'
+    fill='currentColor'
+    viewBox='0 0 24 24'
+  >
+    <path
+      xmlns='http://www.w3.org/2000/svg'
+      d='M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032 s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2 C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z'
+    />{' '}
+  </svg>
+)
+
+const SocialsButton: React.FC<SocialsButtonProps> = ({ provider, label }) => (
+  <Form action={`/auth/${provider}`} method='post'>
+    <button className='inline-flex w-full justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50'>
+      <span className='sr-only'>{label}</span>
+      {provider === SocialsProvider.FACEBOOK ? (
+        <FacebookIcon />
+      ) : (
+        <GoogleIcon />
+      )}
+    </button>
+  </Form>
+)
+
 export default function Example() {
   return (
     <>
@@ -81,44 +130,17 @@ export default function Example() {
 
                   <div className='mt-1 grid grid-cols-2 gap-3'>
                     <div>
-                      <a
-                        href='#'
-                        className='inline-flex w-full justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50'
-                      >
-                        <span className='sr-only'>Sign in with Facebook</span>
-                        <svg
-                          className='h-5 w-5'
-                          aria-hidden='true'
-                          fill='currentColor'
-                          viewBox='0 0 20 20'
-                        >
-                          <path
-                            fillRule='evenodd'
-                            d='M20 10c0-5.523-4.477-10-10-10S0 4.477 0 10c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V10h2.54V7.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V10h2.773l-.443 2.89h-2.33v6.988C16.343 19.128 20 14.991 20 10z'
-                            clipRule='evenodd'
-                          />
-                        </svg>
-                      </a>
+                      <SocialsButton
+                        provider={SocialsProvider.FACEBOOK}
+                        label='Login with Facebook'
+                      />
                     </div>
 
                     <div>
-                      <a
-                        href='#'
-                        className='inline-flex w-full justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50'
-                      >
-                        <span className='sr-only'>Sign in with Google</span>
-                        <svg
-                          className='h-5 w-5'
-                          aria-hidden='true'
-                          fill='currentColor'
-                          viewBox='0 0 24 24'
-                        >
-                          <path
-                            xmlns='http://www.w3.org/2000/svg'
-                            d='M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032 s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2 C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z'
-                          />{' '}
-                        </svg>
-                      </a>
+                      <SocialsButton
+                        provider={SocialsProvider.GOOGLE}
+                        label='Login with Google'
+                      />
                     </div>
                   </div>
                 </div>

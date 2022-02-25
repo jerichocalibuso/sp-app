@@ -6,6 +6,11 @@ import { FormStrategy } from 'remix-auth-form'
 import invariant from 'tiny-invariant'
 import bcrypt from 'bcryptjs'
 import { db } from '~/utils/db.server'
+import {
+  FacebookStrategy,
+  GoogleStrategy,
+  SocialsProvider,
+} from 'remix-auth-socials'
 
 // Create an instance of the authenticator, pass a generic with what
 // strategies will return and will store in the session
@@ -45,4 +50,85 @@ authenticator.use(
     return user
   }),
   'user-pass'
+)
+
+invariant(process.env.GOOGLE_CLIENT_ID, 'Google OAuth Client ID is invalid')
+invariant(
+  process.env.GOOGLE_CLIENT_SECRET,
+  'Google OAuth Client Secret is invalid'
+)
+invariant(process.env.FACEBOOK_CLIENT_ID, 'Facebook OAuth Client ID is invalid')
+invariant(
+  process.env.FACEBOOK_CLIENT_SECRET,
+  'Facebook OAuth Client Secret is invalid'
+)
+
+// Create an instance of the authenticator, pass a generic <User> type which the
+// strategies will return (this will be stored in the session)
+authenticator.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: `https://example.com/auth/${SocialsProvider.GOOGLE}/callback`,
+    },
+    async ({ profile }) => {
+      const email = profile?.emails?.pop()?.value || ''
+      const name =
+        profile?.displayName ||
+        `${profile?.name?.givenName} ${profile?.name?.familyName}` ||
+        ''
+      const profileIconUrl = profile?.photos?.pop()?.value || ''
+      const provider = profile?.provider || ''
+      const providerId = profile?.id || ''
+      return await db.user.upsert({
+        where: {
+          providerId,
+        },
+        update: {},
+        create: {
+          email,
+          name,
+          profileIconUrl,
+          providerId,
+          provider,
+          role: Role.CUSTOMER,
+        },
+      })
+    }
+  )
+)
+
+authenticator.use(
+  new FacebookStrategy(
+    {
+      clientID: process.env.FACEBOOK_CLIENT_ID,
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
+      callbackURL: `https://example.com/auth/${SocialsProvider.FACEBOOK}/callback`,
+    },
+    async ({ profile }) => {
+      const email = profile?.emails?.pop()?.value || ''
+      const name =
+        profile?.displayName ||
+        `${profile?.name?.givenName} ${profile?.name?.familyName}` ||
+        ''
+      const profileIconUrl = profile?.photos?.pop()?.value || ''
+      const provider = profile?.provider || ''
+      const providerId = profile?.id || ''
+      return await db.user.upsert({
+        where: {
+          providerId,
+        },
+        update: {},
+        create: {
+          email,
+          name,
+          profileIconUrl,
+          providerId,
+          provider,
+          role: Role.CUSTOMER,
+        },
+      })
+    }
+  )
 )

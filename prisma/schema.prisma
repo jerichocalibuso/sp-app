@@ -19,16 +19,20 @@ enum Role {
 }
 
 model User {
-  id            String    @id @default(uuid())
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  role          Role
-  username      String?   @unique
-  password      String?
-  contactNumber String?
-  name          String?
-  addresses     Address[]
-  orders        Order[]
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  role           Role
+  username       String?   @unique
+  email          String?
+  provider       String?
+  providerId     String?   @unique
+  password       String?
+  contactNumber  String?
+  name           String?
+  profileIconUrl String?
+  addresses      Address[]
+  orders         Order[]
 }
 
 model Address {
