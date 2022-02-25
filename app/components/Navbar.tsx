@@ -8,6 +8,7 @@ import {
   XIcon,
 } from '@heroicons/react/outline'
 import { Link } from 'remix'
+import { User } from '@prisma/client'
 
 const currencies = ['CADds', 'USD', 'AUD', 'EUR', 'GBP']
 const navigation = {
@@ -15,7 +16,7 @@ const navigation = {
     { name: 'All Products', href: '/products' },
     { name: 'Chicken', href: '/chicken' },
     { name: 'Pork', href: '/pork' },
-    { name: 'Beef', href: 'beef' },
+    { name: 'Beef', href: '/beef' },
   ],
 }
 
@@ -23,7 +24,11 @@ function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
 }
 
-export default function Example() {
+type NavbarProps = {
+  user: User | null
+}
+
+export default function Example({ user }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
@@ -105,44 +110,7 @@ export default function Example() {
                 </div>
               </div>
 
-              <div className='space-y-6 border-t border-gray-200 py-6 px-4'>
-                {/* Currency selector */}
-                <form>
-                  <div className='inline-block'>
-                    <label htmlFor='mobile-currency' className='sr-only'>
-                      Currency
-                    </label>
-                    <div className='group relative -ml-2 rounded-md border-transparent focus-within:ring-2 focus-within:ring-white'>
-                      <select
-                        id='mobile-currency'
-                        name='currency'
-                        className='flex items-center rounded-md border-transparent bg-none py-0.5 pl-2 pr-5 text-sm font-medium text-gray-700 focus:border-transparent focus:outline-none focus:ring-0 group-hover:text-red-600'
-                      >
-                        {currencies.map((currency) => (
-                          <option key={currency}>{currency}</option>
-                        ))}
-                      </select>
-                      <div className='pointer-events-none absolute inset-y-0 right-0 flex items-center'>
-                        <svg
-                          aria-hidden='true'
-                          xmlns='http://www.w3.org/2000/svg'
-                          fill='none'
-                          viewBox='0 0 20 20'
-                          className='h-5 w-5 text-gray-500'
-                        >
-                          <path
-                            stroke='currentColor'
-                            strokeLinecap='round'
-                            strokeLinejoin='round'
-                            strokeWidth='1.5'
-                            d='M6 8l4 4 4-4'
-                          />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                </form>
-              </div>
+              <div className='space-y-6 border-t border-gray-200 py-6 px-4'></div>
             </div>
           </Transition.Child>
         </Dialog>
@@ -231,13 +199,26 @@ export default function Example() {
                         </div>
 
                         <div className='flex'>
-                          <Link
-                            to='#'
-                            className='-m-2 p-2 text-gray-400 hover:text-red-600'
-                          >
-                            <span className='sr-only'>Account</span>
-                            <UserIcon className='h-6 w-6' aria-hidden='true' />
-                          </Link>
+                          {user ? (
+                            <Link
+                              to='/signout'
+                              className='-m-2 p-2 text-gray-400 hover:text-red-600'
+                            >
+                              <span className='sr-only'>Sign out</span>
+                              Sign out
+                            </Link>
+                          ) : (
+                            <Link
+                              to='/signin'
+                              className='-m-2 p-2 text-gray-400 hover:text-red-600'
+                            >
+                              <span className='sr-only'>Account</span>
+                              <UserIcon
+                                className='h-6 w-6'
+                                aria-hidden='true'
+                              />
+                            </Link>
+                          )}
                         </div>
                       </div>
 

@@ -1,17 +1,21 @@
 import {
+  json,
   Links,
   LiveReload,
+  LoaderFunction,
   Meta,
   Outlet,
   Scripts,
   ScrollRestoration,
   useCatch,
+  useLoaderData,
 } from 'remix'
 import type { MetaFunction } from 'remix'
 import styles from './tailwind.css'
 import Navbar from './components/Navbar'
 import Error from './components/Error'
 import Footer from './components/Footer'
+import { authenticator } from './services/auth.server'
 
 export function links() {
   return [
@@ -24,7 +28,14 @@ export const meta: MetaFunction = () => {
   return { title: 'Camille Meat Shop' }
 }
 
+export const loader: LoaderFunction = async ({ request }) => {
+  // If the user is already authenticated redirect to /dashboard directly
+  const user = await authenticator.isAuthenticated(request)
+  return json({ user })
+}
+
 export default function App() {
+  const { user } = useLoaderData()
   return (
     <html lang='en'>
       <head>
@@ -35,7 +46,7 @@ export default function App() {
       </head>
       <body>
         <div>
-          <Navbar />
+          <Navbar user={user || null} />
           <Outlet />
           <Footer />
         </div>
