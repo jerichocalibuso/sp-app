@@ -35,7 +35,7 @@ export let action: ActionFunction = async ({ request }) => {
   // to be redirected to after a success or a failure
   return await authenticator.authenticate('user-pass', request, {
     successRedirect: '/',
-    failureRedirect: '/login',
+    failureRedirect: '/signin',
   })
 }
 
