@@ -1,9 +1,15 @@
-import { Form } from '@remix-run/react'
-import { ActionFunction, LoaderFunction } from '@remix-run/server-runtime'
+import { Form, Link, useLoaderData, useTransition } from '@remix-run/react'
+import { ActionFunction, json, LoaderFunction } from '@remix-run/server-runtime'
 import { authenticator } from '~/services/auth.server'
-import { Link } from 'remix'
 
 import { SocialsProvider } from 'remix-auth-socials'
+import {
+  commitSession,
+  destroySession,
+  getSession,
+} from '~/services/session.server'
+import Notification, { NotificationStatus } from '~/components/Notification'
+import { useEffect, useState } from 'react'
 
 interface SocialsButtonProps {
   provider: SocialsProvider
@@ -33,7 +39,8 @@ export let action: ActionFunction = async ({ request }) => {
   // we call the method with the name of the strategy we want to use and the
   // request object, optionally we pass an object with the URLs we want the user
   // to be redirected to after a success or a failure
-  return await authenticator.authenticate('user-pass', request, {
+
+  return await authenticator.authenticate('user-pass-signin', request, {
     successRedirect: '/',
     failureRedirect: '/signin',
   })
@@ -43,11 +50,10 @@ export let action: ActionFunction = async ({ request }) => {
 // authenticated with `authenticator.isAuthenticated` and redirect to the
 // dashboard if it is or return null if it's not
 export let loader: LoaderFunction = async ({ request }) => {
-  // If the user is already authenticated redirect to /dashboard directly
-  return await authenticator.isAuthenticated(request, {
-    successRedirect: '/',
-    // if admin redirect to dashboard
-  })
+  await authenticator.isAuthenticated(request, { successRedirect: '/' })
+  let session = await getSession(request)
+  let error = session.get('auth:error') as string | null
+  return json({ error })
 }
 
 const FacebookIcon = () => (
@@ -93,8 +99,26 @@ const SocialsButton: React.FC<SocialsButtonProps> = ({ provider, label }) => (
 )
 
 export default function Example() {
+  const loaderData = useLoaderData()
+  const [isOpenNotif, setOpenNotif] = useState(false)
+  const transition = useTransition()
+
+  useEffect(() => {
+    if (loaderData?.error?.message) setOpenNotif(true)
+  }, [loaderData])
+
   return (
     <>
+      {transition.submission ? null : (
+        <Notification
+          isOpenNotif={isOpenNotif}
+          closeNotif={() => {
+            setOpenNotif(false)
+          }}
+          label={loaderData?.error?.message}
+          status={NotificationStatus.FAILED}
+        />
+      )}
       {/*
         This example requires updating your template:
 
@@ -215,10 +239,36 @@ export default function Example() {
 
                   <div>
                     <button
+                      disabled={transition.state === 'submitting'}
                       type='submit'
-                      className='flex w-full justify-center rounded-md border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
+                      className={`${
+                        transition.submission && 'cursor-progress'
+                      } flex w-full justify-center rounded-md border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2`}
                     >
-                      Sign in
+                      {transition.submission ? (
+                        <svg
+                          className='-ml-1 mr-3 h-5 w-5 animate-spin text-white'
+                          xmlns='http://www.w3.org/2000/svg'
+                          fill='none'
+                          viewBox='0 0 24 24'
+                        >
+                          <circle
+                            className='opacity-25'
+                            cx='12'
+                            cy='12'
+                            r='10'
+                            stroke='currentColor'
+                            stroke-width='4'
+                          ></circle>
+                          <path
+                            className='opacity-75'
+                            fill='currentColor'
+                            d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
+                          ></path>
+                        </svg>
+                      ) : (
+                        'Sign in'
+                      )}
                     </button>
                   </div>
                 </Form>

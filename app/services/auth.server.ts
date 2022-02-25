@@ -14,8 +14,38 @@ import {
 
 // Create an instance of the authenticator, pass a generic with what
 // strategies will return and will store in the session
-export let authenticator = new Authenticator<User>(sessionStorage)
+export let authenticator = new Authenticator<User>(sessionStorage, {
+  throwOnError: true,
+})
 
+// LOGIN METHOD
+
+authenticator.use(
+  new FormStrategy(async ({ form }) => {
+    let username = form.get('username')
+    let password = form.get('password')
+
+    invariant(typeof username === 'string', 'username must be a string')
+    invariant(typeof password === 'string', 'password must be a string')
+
+    let user = await db.user.findUnique({ where: { username } })
+    if (!user) throw new Error('Invalid credentials')
+
+    if (!user.password) throw new Error('User does not have a password')
+
+    const isValidPassword = await bcrypt.compare(password, user.password)
+    // $2a$10$I42RULm6elpPAQdtoyomJeXO1WR73Ami0rPV2TVAkT4viDzYciSQW
+    // $2a$10$l18Zk4y322zSarH/Epe8h.8dh1mPYqdZpNGpUfleEyW7.fVQB1UX2
+    if (!isValidPassword) {
+      throw new Error('Invalid credentials')
+    }
+
+    return user
+  }),
+  'user-pass-signin'
+)
+
+// SIGNUP METHODS
 authenticator.use(
   new FormStrategy(async ({ form, context }) => {
     // Here you can use `form` to access and input values from the form.
@@ -49,7 +79,7 @@ authenticator.use(
     // And return the user as the Authenticator expects it
     return user
   }),
-  'user-pass'
+  'user-pass-signup'
 )
 
 invariant(process.env.GOOGLE_CLIENT_ID, 'Google OAuth Client ID is invalid')

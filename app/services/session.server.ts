@@ -1,5 +1,5 @@
 // app/services/session.server.ts
-import { createCookieSessionStorage } from 'remix'
+import { createCookieSessionStorage } from '@remix-run/server-runtime'
 
 // export the whole sessionStorage object
 export let sessionStorage = createCookieSessionStorage({
@@ -14,4 +14,8 @@ export let sessionStorage = createCookieSessionStorage({
 })
 
 // you can also export the methods individually for your own usage
-export let { getSession, commitSession, destroySession } = sessionStorage
+export let { commitSession, destroySession } = sessionStorage
+
+export function getSession(request: Request) {
+  return sessionStorage.getSession(request.headers.get('Cookie'))
+}

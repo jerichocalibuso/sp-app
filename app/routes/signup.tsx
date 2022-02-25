@@ -1,5 +1,5 @@
 import { Form } from '@remix-run/react'
-import { ActionFunction } from '@remix-run/server-runtime'
+import { ActionFunction, LoaderFunction } from '@remix-run/server-runtime'
 import { authenticator } from '~/services/auth.server'
 
 /*
@@ -25,22 +25,22 @@ export let action: ActionFunction = async ({ request }) => {
   // we call the method with the name of the strategy we want to use and the
   // request object, optionally we pass an object with the URLs we want the user
   // to be redirected to after a success or a failure
-  await authenticator.authenticate('user-pass', request, {
+  await authenticator.authenticate('user-pass-signup', request, {
     successRedirect: '/',
-    failureRedirect: '/signin',
+    failureRedirect: '/signup',
   })
   return null
 }
 
-// // Finally, we can export a loader function where we check if the user is
-// // authenticated with `authenticator.isAuthenticated` and redirect to the
-// // dashboard if it is or return null if it's not
-// export let loader: LoaderFunction = async ({ request }) => {
-//   // If the user is already authenticated redirect to /dashboard directly
-//   return await authenticator.isAuthenticated(request, {
-//     successRedirect: '/',
-//   })
-// }
+// Finally, we can export a loader function where we check if the user is
+// authenticated with `authenticator.isAuthenticated` and redirect to the
+// dashboard if it is or return null if it's not
+export let loader: LoaderFunction = async ({ request }) => {
+  // If the user is already authenticated redirect to /dashboard directly
+  return await authenticator.isAuthenticated(request, {
+    successRedirect: '/',
+  })
+}
 
 export default function Example() {
   return (
@@ -58,24 +58,15 @@ export default function Example() {
           <div className='mx-auto w-full max-w-sm lg:w-96'>
             <div>
               <h2 className='mt-6 text-3xl font-extrabold text-gray-900'>
-                Sign in to your account
+                Create your account
               </h2>
-              <p className='mt-2 text-sm text-gray-600'>
-                Or{' '}
-                <a
-                  href='#'
-                  className='font-medium text-red-600 hover:text-red-500'
-                >
-                  sign up for an account
-                </a>
-              </p>
             </div>
 
-            <div className='mt-8'>
+            <div className='mt-6'>
               <div>
                 <div>
                   <p className='text-sm font-medium text-gray-700'>
-                    Sign in with
+                    Sign up with
                   </p>
 
                   <div className='mt-1 grid grid-cols-2 gap-3'>
@@ -170,23 +161,10 @@ export default function Example() {
                         id='password'
                         name='password'
                         type='password'
-                        autoComplete='current-password'
+                        autoComplete='new-password'
                         required
                         className='block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-red-500 focus:outline-none focus:ring-red-500 sm:text-sm'
                       />
-                    </div>
-                  </div>
-
-                  <div className='flex items-center justify-between'>
-                    <div className='flex items-center'></div>
-
-                    <div className='text-sm'>
-                      <a
-                        href='#'
-                        className='font-medium text-red-600 hover:text-red-500'
-                      >
-                        Forgot your password?
-                      </a>
                     </div>
                   </div>
 
@@ -195,7 +173,7 @@ export default function Example() {
                       type='submit'
                       className='flex w-full justify-center rounded-md border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
                     >
-                      Sign in
+                      Sign up
                     </button>
                   </div>
                 </Form>
@@ -206,7 +184,7 @@ export default function Example() {
         <div className='relative hidden w-0 flex-1 lg:block'>
           <img
             className='absolute inset-0 h-full w-full object-cover'
-            src='/images/hero-fresh-meat2.jpg'
+            src='/images/sign-up.jpg'
             alt='fresh chicken pork meat and beef'
           />
         </div>
