@@ -70,7 +70,7 @@ authenticator.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: `https://example.com/auth/${SocialsProvider.GOOGLE}/callback`,
+      callbackURL: `https://camillemeat.shop/auth/${SocialsProvider.GOOGLE}/callback`,
     },
     async ({ profile }) => {
       const email = profile?.emails?.pop()?.value || ''
@@ -104,7 +104,7 @@ authenticator.use(
     {
       clientID: process.env.FACEBOOK_CLIENT_ID,
       clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
-      callbackURL: `https://example.com/auth/${SocialsProvider.FACEBOOK}/callback`,
+      callbackURL: `https://camillemeat.shop/auth/${SocialsProvider.FACEBOOK}/callback`,
     },
     async ({ profile }) => {
       const email = profile?.emails?.pop()?.value || ''
