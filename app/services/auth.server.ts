@@ -59,20 +59,15 @@ authenticator.use(
     invariant(typeof password === 'string', 'password must be a string')
     invariant(password.length > 0, 'password must not be empty')
 
+    const existingUser = await db.user.findUnique({ where: { username } })
+    if (existingUser) throw new Error('Username is already used')
+
     // And if you have a password you should hash it
     const hashedPassword = await bcrypt.hash(password, 10)
 
     // And finally, you can find, or create, the user
-    const user = await db.user.upsert({
-      where: {
-        username,
-      },
-      update: {},
-      create: {
-        username,
-        password: hashedPassword,
-        role: Role.CUSTOMER,
-      },
+    const user = await db.user.create({
+      data: { username, password: hashedPassword, role: Role.CUSTOMER },
     })
 
     // And return the user as the Authenticator expects it

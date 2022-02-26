@@ -1,11 +1,12 @@
-import { Form, useTransition } from '@remix-run/react'
-import { ActionFunction, LoaderFunction } from '@remix-run/server-runtime'
+import { useTransition, useLoaderData } from '@remix-run/react'
+import { ActionFunction, LoaderFunction, json } from '@remix-run/server-runtime'
 import { authenticator } from '~/services/auth.server'
 import { withZod } from '@remix-validated-form/with-zod'
 import { ValidatedForm, validationError } from 'remix-validated-form'
 import { z } from 'zod'
 import { zfd } from 'zod-form-data'
 import { Input } from '~/components/Input'
+import { getSession } from '~/services/session.server'
 
 export const validator = withZod(
   z.object({
@@ -43,10 +44,13 @@ export let action: ActionFunction = async ({ request }) => {
   // request object, optionally we pass an object with the URLs we want the user
   // to be redirected to after a success or a failure
 
-  const result = await validator.validate(await request.formData())
+  const requestClone = request.clone() // if not cloned, authenticator cannot use the request
+
+  const formData = await request.formData()
+  const result = await validator.validate(formData)
   if (result.error) return validationError(result.error)
 
-  return await authenticator.authenticate('user-pass-signup', request, {
+  return await authenticator.authenticate('user-pass-signup', requestClone, {
     successRedirect: '/',
     failureRedirect: '/signup',
   })
@@ -57,13 +61,15 @@ export let action: ActionFunction = async ({ request }) => {
 // dashboard if it is or return null if it's not
 export let loader: LoaderFunction = async ({ request }) => {
   // If the user is already authenticated redirect to /dashboard directly
-  return await authenticator.isAuthenticated(request, {
-    successRedirect: '/',
-  })
+  await authenticator.isAuthenticated(request, { successRedirect: '/' })
+  let session = await getSession(request)
+  let error = session.get('auth:error') as string | null
+  return json({ error })
 }
 
 export default function Example() {
   const transition = useTransition()
+  const loaderData = useLoaderData()
 
   return (
     <>
@@ -153,13 +159,25 @@ export default function Example() {
                     label='Username'
                     type='username'
                     autoComplete='username'
+                    className={`${
+                      loaderData?.error?.message && 'border-red-500'
+                    }`}
                   />
                   <Input
                     name='password'
                     label='Password'
                     type='password'
                     autoComplete='current-password'
+                    className={`${
+                      loaderData?.error?.message && 'border-red-500'
+                    }`}
                   />
+
+                  <div>
+                    <p className='text-sm font-medium text-red-600'>
+                      {loaderData?.error?.message}
+                    </p>
+                  </div>
 
                   <div>
                     <button
@@ -191,7 +209,7 @@ export default function Example() {
                           ></path>
                         </svg>
                       ) : (
-                        'Sign in'
+                        'Sign up'
                       )}
                     </button>
                   </div>
