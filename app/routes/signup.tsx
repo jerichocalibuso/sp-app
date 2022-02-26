@@ -6,7 +6,7 @@ import { ValidatedForm, validationError } from 'remix-validated-form'
 import { z } from 'zod'
 import { zfd } from 'zod-form-data'
 import { Input } from '~/components/Input'
-import { getSession } from '~/services/session.server'
+import { destroySession, getSession } from '~/services/session.server'
 
 export const validator = withZod(
   z.object({
@@ -71,7 +71,14 @@ export let loader: LoaderFunction = async ({ request }) => {
   await authenticator.isAuthenticated(request, { successRedirect: '/' })
   let session = await getSession(request)
   let error = session.get('auth:error') as string | null
-  return json({ error })
+  return json(
+    { error },
+    {
+      headers: {
+        'Set-Cookie': await destroySession(session),
+      },
+    }
+  )
 }
 
 export default function Example() {

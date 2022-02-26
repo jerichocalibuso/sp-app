@@ -3,7 +3,11 @@ import { ActionFunction, json, LoaderFunction } from '@remix-run/server-runtime'
 import { authenticator } from '~/services/auth.server'
 
 import { SocialsProvider } from 'remix-auth-socials'
-import { getSession } from '~/services/session.server'
+import {
+  commitSession,
+  destroySession,
+  getSession,
+} from '~/services/session.server'
 import { withZod } from '@remix-validated-form/with-zod'
 import { ValidatedForm, validationError } from 'remix-validated-form'
 import { z } from 'zod'
@@ -42,7 +46,9 @@ export let action: ActionFunction = async ({ request }) => {
   // form validation
   const formData = await request.formData()
   const result = await validator.validate(formData)
-  if (result.error) return validationError(result.error)
+  if (result.error) {
+    return validationError(result.error)
+  }
 
   return await authenticator.authenticate('user-pass-signin', requestClone, {
     successRedirect: '/',
@@ -57,7 +63,15 @@ export let loader: LoaderFunction = async ({ request }) => {
   await authenticator.isAuthenticated(request, { successRedirect: '/' })
   let session = await getSession(request)
   let error = session.get('auth:error') as string | null
-  return json({ error })
+
+  return json(
+    { error },
+    {
+      headers: {
+        'Set-Cookie': await destroySession(session),
+      },
+    }
+  )
 }
 
 const FacebookIcon = () => (
