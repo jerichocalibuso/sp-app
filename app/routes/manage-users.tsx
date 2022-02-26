@@ -97,17 +97,19 @@ export default function Example() {
                         <div className='text-sm text-gray-900'>{user.role}</div>
                       </td>
                       <td className='whitespace-nowrap px-6 py-4'>
-                        <div className='text-smtext-gray-900'>
+                        <div className='text-sm text-gray-900'>
                           {user.username}
                         </div>
                       </td>
                       <td className='whitespace-nowrap px-6 py-4'>
-                        <div className='text-smtext-gray-900'>
+                        <div className='text-sm text-gray-900'>
                           {user.provider}
                         </div>
                       </td>
                       <td className='whitespace-nowrap px-6 py-4'>
-                        <div className='text-smtext-gray-900'>{user.email}</div>
+                        <div className='text-sm text-gray-900'>
+                          {user.email}
+                        </div>
                       </td>
 
                       {/* <td className='whitespace-nowrap px-6 py-4'>
