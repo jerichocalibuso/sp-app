@@ -3,35 +3,32 @@ import { ActionFunction, json, LoaderFunction } from '@remix-run/server-runtime'
 import { authenticator } from '~/services/auth.server'
 
 import { SocialsProvider } from 'remix-auth-socials'
-import {
-  commitSession,
-  destroySession,
-  getSession,
-} from '~/services/session.server'
-import Notification, { NotificationStatus } from '~/components/Notification'
-import { useEffect, useState } from 'react'
+import { getSession } from '~/services/session.server'
+import { withZod } from '@remix-validated-form/with-zod'
+import { ValidatedForm, validationError } from 'remix-validated-form'
+import { z } from 'zod'
+import { zfd } from 'zod-form-data'
+import { Input } from '~/components/Input'
 
 interface SocialsButtonProps {
   provider: SocialsProvider
   label: string
 }
 
-/*
-  This example requires Tailwind CSS v2.0+ 
-  
-  This example requires some changes to your config:
-  
-  ```
-  // tailwind.config.js
-  module.exports = {
-    // ...
-    plugins: [
-      // ...
-      require('@tailwindcss/forms'),
-    ],
-  }
-  ```
-*/
+export const validator = withZod(
+  z.object({
+    username: zfd.text(
+      z.string({
+        required_error: 'Username is required',
+      })
+    ),
+    password: zfd.text(
+      z.string({
+        required_error: 'Password is required',
+      })
+    ),
+  })
+)
 
 // // Second, we need to export an action function, here we will use the
 // // `authenticator.authenticate method`
@@ -40,7 +37,14 @@ export let action: ActionFunction = async ({ request }) => {
   // request object, optionally we pass an object with the URLs we want the user
   // to be redirected to after a success or a failure
 
-  return await authenticator.authenticate('user-pass-signin', request, {
+  const requestClone = request.clone() // if not cloned, authenticator cannot use the request
+
+  // form validation
+  const formData = await request.formData()
+  const result = await validator.validate(formData)
+  if (result.error) return validationError(result.error)
+
+  return await authenticator.authenticate('user-pass-signin', requestClone, {
     successRedirect: '/',
     failureRedirect: '/signin',
   })
@@ -100,25 +104,10 @@ const SocialsButton: React.FC<SocialsButtonProps> = ({ provider, label }) => (
 
 export default function Example() {
   const loaderData = useLoaderData()
-  const [isOpenNotif, setOpenNotif] = useState(false)
   const transition = useTransition()
-
-  useEffect(() => {
-    if (loaderData?.error?.message) setOpenNotif(true)
-  }, [loaderData])
 
   return (
     <>
-      {transition.submission ? null : (
-        <Notification
-          isOpenNotif={isOpenNotif}
-          closeNotif={() => {
-            setOpenNotif(false)
-          }}
-          label={loaderData?.error?.message}
-          status={NotificationStatus.FAILED}
-        />
-      )}
       {/*
         This example requires updating your template:
 
@@ -185,47 +174,38 @@ export default function Example() {
               </div>
 
               <div className='mt-6'>
-                <Form method='post' className='space-y-6'>
-                  <div>
-                    <label
-                      htmlFor='username'
-                      className='block text-sm font-medium text-gray-700'
-                    >
-                      Username
-                    </label>
-                    <div className='mt-1'>
-                      <input
-                        id='username'
-                        name='username'
-                        type='username'
-                        autoComplete='username'
-                        required
-                        className='block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-red-500 focus:outline-none focus:ring-red-500 sm:text-sm'
-                      />
-                    </div>
-                  </div>
+                <ValidatedForm
+                  validator={validator}
+                  method='post'
+                  className='space-y-6'
+                >
+                  <Input
+                    name='username'
+                    label='Username'
+                    type='username'
+                    autoComplete='username'
+                    className={`${
+                      loaderData?.error?.message && 'border-red-500'
+                    }`}
+                  />
+                  <Input
+                    name='password'
+                    label='Password'
+                    type='password'
+                    autoComplete='current-password'
+                    className={`${
+                      loaderData?.error?.message && 'border-red-500'
+                    }`}
+                  />
 
-                  <div className='space-y-1'>
-                    <label
-                      htmlFor='password'
-                      className='block text-sm font-medium text-gray-700'
-                    >
-                      Password
-                    </label>
-                    <div className='mt-1'>
-                      <input
-                        id='password'
-                        name='password'
-                        type='password'
-                        autoComplete='current-password'
-                        required
-                        className='block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-red-500 focus:outline-none focus:ring-red-500 sm:text-sm'
-                      />
+                  <div className='flex items-center justify-between space-x-8'>
+                    <div>
+                      {loaderData?.error?.message ? (
+                        <p className='text-sm font-medium text-red-600'>
+                          {loaderData?.error?.message}
+                        </p>
+                      ) : null}
                     </div>
-                  </div>
-
-                  <div className='flex items-center justify-between'>
-                    <div className='flex items-center'></div>
 
                     <div className='text-sm'>
                       <a
@@ -258,7 +238,7 @@ export default function Example() {
                             cy='12'
                             r='10'
                             stroke='currentColor'
-                            stroke-width='4'
+                            strokeWidth='4'
                           ></circle>
                           <path
                             className='opacity-75'
@@ -271,7 +251,7 @@ export default function Example() {
                       )}
                     </button>
                   </div>
-                </Form>
+                </ValidatedForm>
               </div>
             </div>
           </div>

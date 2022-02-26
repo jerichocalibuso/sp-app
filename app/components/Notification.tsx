@@ -1,5 +1,4 @@
 /* This example requires Tailwind CSS v2.0+ */
-import { Fragment, ReactElement, useState } from 'react'
 import { Transition } from '@headlessui/react'
 import {
   CheckCircleIcon,

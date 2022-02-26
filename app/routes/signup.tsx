@@ -1,23 +1,40 @@
-import { Form } from '@remix-run/react'
+import { Form, useTransition } from '@remix-run/react'
 import { ActionFunction, LoaderFunction } from '@remix-run/server-runtime'
 import { authenticator } from '~/services/auth.server'
+import { withZod } from '@remix-validated-form/with-zod'
+import { ValidatedForm, validationError } from 'remix-validated-form'
+import { z } from 'zod'
+import { zfd } from 'zod-form-data'
+import { Input } from '~/components/Input'
 
-/*
-  This example requires Tailwind CSS v2.0+ 
-  
-  This example requires some changes to your config:
-  
-  ```
-  // tailwind.config.js
-  module.exports = {
-    // ...
-    plugins: [
-      // ...
-      require('@tailwindcss/forms'),
-    ],
-  }
-  ```
-*/
+export const validator = withZod(
+  z.object({
+    username: zfd.text(
+      z
+        .string({
+          required_error: 'Username is required',
+        })
+        .min(6, 'Username should at least have 6 characters')
+        .max(32, 'Username is too long')
+        .regex(
+          /^[a-zA-Z0-9_]*$/,
+          'Username should only include alphanumeric characters and underscore'
+        )
+    ),
+    password: zfd.text(
+      z
+        .string({
+          required_error: 'Password is required',
+        })
+        .min(8, 'Password should at least have 8 characters')
+        .max(32, 'Password is too long')
+        .regex(
+          /^[a-zA-Z0-9_@^$!#?]*$/,
+          'Password should only include alphanumeric characters and symbols (_@^$!#?)'
+        )
+    ),
+  })
+)
 
 // // Second, we need to export an action function, here we will use the
 // // `authenticator.authenticate method`
@@ -25,11 +42,14 @@ export let action: ActionFunction = async ({ request }) => {
   // we call the method with the name of the strategy we want to use and the
   // request object, optionally we pass an object with the URLs we want the user
   // to be redirected to after a success or a failure
-  await authenticator.authenticate('user-pass-signup', request, {
+
+  const result = await validator.validate(await request.formData())
+  if (result.error) return validationError(result.error)
+
+  return await authenticator.authenticate('user-pass-signup', request, {
     successRedirect: '/',
     failureRedirect: '/signup',
   })
-  return null
 }
 
 // Finally, we can export a loader function where we check if the user is
@@ -43,16 +63,10 @@ export let loader: LoaderFunction = async ({ request }) => {
 }
 
 export default function Example() {
+  const transition = useTransition()
+
   return (
     <>
-      {/*
-        This example requires updating your template:
-
-        ```
-        <html class="h-full bg-white">
-        <body class="h-full">
-        ```
-      */}
       <div className='flex min-h-full pt-16'>
         <div className='flex flex-1 flex-col justify-center py-12 px-4 sm:px-6 lg:flex-none lg:px-20 xl:px-24'>
           <div className='mx-auto w-full max-w-sm lg:w-96'>
@@ -129,54 +143,59 @@ export default function Example() {
               </div>
 
               <div className='mt-6'>
-                <Form method='post' className='space-y-6'>
-                  <div>
-                    <label
-                      htmlFor='username'
-                      className='block text-sm font-medium text-gray-700'
-                    >
-                      Username
-                    </label>
-                    <div className='mt-1'>
-                      <input
-                        id='username'
-                        name='username'
-                        type='username'
-                        autoComplete='username'
-                        required
-                        className='block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-red-500 focus:outline-none focus:ring-red-500 sm:text-sm'
-                      />
-                    </div>
-                  </div>
-
-                  <div className='space-y-1'>
-                    <label
-                      htmlFor='password'
-                      className='block text-sm font-medium text-gray-700'
-                    >
-                      Password
-                    </label>
-                    <div className='mt-1'>
-                      <input
-                        id='password'
-                        name='password'
-                        type='password'
-                        autoComplete='new-password'
-                        required
-                        className='block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-red-500 focus:outline-none focus:ring-red-500 sm:text-sm'
-                      />
-                    </div>
-                  </div>
+                <ValidatedForm
+                  validator={validator}
+                  method='post'
+                  className='space-y-6'
+                >
+                  <Input
+                    name='username'
+                    label='Username'
+                    type='username'
+                    autoComplete='username'
+                  />
+                  <Input
+                    name='password'
+                    label='Password'
+                    type='password'
+                    autoComplete='current-password'
+                  />
 
                   <div>
                     <button
+                      disabled={transition.state === 'submitting'}
                       type='submit'
-                      className='flex w-full justify-center rounded-md border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
+                      className={`${
+                        transition.submission && 'cursor-progress'
+                      } flex w-full justify-center rounded-md border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2`}
                     >
-                      Sign up
+                      {transition.submission ? (
+                        <svg
+                          className='-ml-1 mr-3 h-5 w-5 animate-spin text-white'
+                          xmlns='http://www.w3.org/2000/svg'
+                          fill='none'
+                          viewBox='0 0 24 24'
+                        >
+                          <circle
+                            className='opacity-25'
+                            cx='12'
+                            cy='12'
+                            r='10'
+                            stroke='currentColor'
+                            strokeWidth='4'
+                          ></circle>
+                          <path
+                            className='opacity-75'
+                            fill='currentColor'
+                            d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
+                          ></path>
+                        </svg>
+                      ) : (
+                        'Sign in'
+                      )}
                     </button>
                   </div>
-                </Form>
+                </ValidatedForm>
               </div>
             </div>
           </div>
