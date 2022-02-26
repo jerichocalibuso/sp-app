@@ -12,15 +12,21 @@ import {
 } from 'remix'
 import type { MetaFunction } from 'remix'
 import styles from './tailwind.css'
+import nprogress from './styles/nprogress.css'
 import Navbar from './components/Navbar'
 import Error from './components/Error'
 import Footer from './components/Footer'
 import { authenticator } from './services/auth.server'
 
+import nProgressStyles from 'nprogress/nprogress.css'
+import { useNProgress } from './hooks/useNProgress'
+
 export function links() {
   return [
     { rel: 'stylesheet', href: styles },
     { rel: 'icon', type: 'image/svg', href: '/images/logo.png' },
+    { rel: 'stylesheet', href: nProgressStyles },
+    { rel: 'stylesheet', href: nprogress },
   ]
 }
 
@@ -36,6 +42,9 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 export default function App() {
   const { user } = useLoaderData()
+
+  useNProgress()
+
   return (
     <html lang='en'>
       <head>
