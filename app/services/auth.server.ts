@@ -49,10 +49,14 @@ authenticator.use(
   new FormStrategy(async ({ form, context }) => {
     // Here you can use `form` to access and input values from the form.
     // and also use `context` to access more things from the server
+    const name = form.get('name')
     const username = form.get('username')
     const password = form.get('password')
 
     // You can validate the inputs however you want
+    invariant(typeof name === 'string', 'name must be a string')
+    invariant(name.length > 0, 'name must not be empty')
+
     invariant(typeof username === 'string', 'username must be a string')
     invariant(username.length > 0, 'username must not be empty')
 
@@ -67,7 +71,7 @@ authenticator.use(
 
     // And finally, you can find, or create, the user
     const user = await db.user.create({
-      data: { username, password: hashedPassword, role: Role.CUSTOMER },
+      data: { username, password: hashedPassword, role: Role.CUSTOMER, name },
     })
 
     // And return the user as the Authenticator expects it

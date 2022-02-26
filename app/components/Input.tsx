@@ -18,6 +18,7 @@ type InputProps = {
   'data-testid'?: string
   form?: string
   className?: string
+  placeholder?: string
 }
 
 export const Input = forwardRef(
@@ -32,6 +33,7 @@ export const Input = forwardRef(
       'data-testid': dataTestId,
       form,
       className,
+      placeholder,
     }: InputProps,
     ref: React.ForwardedRef<HTMLInputElement>
   ) => {
@@ -61,6 +63,7 @@ export const Input = forwardRef(
               id: name,
               value: actualValue,
               autoComplete,
+              placeholder,
             })}
           />
         </div>

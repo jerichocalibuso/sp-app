@@ -5,7 +5,7 @@ async function seed() {
   await Promise.all(getJokes().map((joke) => {}))
 }
 
-seed()
+// seed()
 
 function getJokes() {
   return [

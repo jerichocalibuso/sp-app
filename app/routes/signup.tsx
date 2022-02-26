@@ -10,6 +10,13 @@ import { getSession } from '~/services/session.server'
 
 export const validator = withZod(
   z.object({
+    name: zfd.text(
+      z
+        .string({
+          required_error: 'Name is required',
+        })
+        .regex(/^[a-zA-Z ]*$/, 'Name should only include alphabet characters')
+    ),
     username: zfd.text(
       z
         .string({
@@ -155,10 +162,21 @@ export default function Example() {
                   className='space-y-6'
                 >
                   <Input
+                    name='name'
+                    label='Full Name'
+                    type='name'
+                    placeholder='Juan Dela Cruz'
+                    autoComplete='name'
+                    className={`${
+                      loaderData?.error?.message && 'border-red-500'
+                    }`}
+                  />
+                  <Input
                     name='username'
                     label='Username'
                     type='username'
                     autoComplete='username'
+                    placeholder='juandelacruz123'
                     className={`${
                       loaderData?.error?.message && 'border-red-500'
                     }`}
