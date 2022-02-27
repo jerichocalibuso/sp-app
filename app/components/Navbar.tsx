@@ -1,16 +1,17 @@
 import { Fragment, useState } from 'react'
-import { Dialog, Popover, Tab, Transition } from '@headlessui/react'
+import { Dialog, Menu, Popover, Tab, Transition } from '@headlessui/react'
 import {
+  ChevronDownIcon,
   MenuIcon,
   SearchIcon,
   ShoppingCartIcon,
-  UserIcon,
   XIcon,
 } from '@heroicons/react/outline'
 import { Link } from 'remix'
 import { User } from '@prisma/client'
+import { ArrowRightIcon } from '@heroicons/react/solid'
+import AccountDropdown from './AccountDropdown'
 
-const currencies = ['CADds', 'USD', 'AUD', 'EUR', 'GBP']
 const navigation = {
   pages: [
     { name: 'All Products', href: '/products' },
@@ -18,10 +19,6 @@ const navigation = {
     { name: 'Pork', href: '/pork' },
     { name: 'Beef', href: '/beef' },
   ],
-}
-
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(' ')
 }
 
 type NavbarProps = {
@@ -64,7 +61,7 @@ export default function Example({ user }: NavbarProps) {
               <div className='flex px-4 pt-5 pb-2.5'>
                 <button
                   type='button'
-                  className='-m-2 inline-flex items-center justify-center rounded-md p-2 text-gray-400'
+                  className='-m-2 inline-flex items-center justify-center rounded-md p-2 text-gray-700 hover:text-red-500'
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <span className='sr-only'>Close menu</span>
@@ -97,7 +94,7 @@ export default function Example({ user }: NavbarProps) {
                     to='#'
                     className='-m-2 block p-2 font-medium text-gray-900'
                   >
-                    Create an account
+                    Sign in
                   </Link>
                 </div>
                 <div className='flow-root'>
@@ -105,7 +102,7 @@ export default function Example({ user }: NavbarProps) {
                     to='#'
                     className='-m-2 block p-2 font-medium text-gray-900'
                   >
-                    Sign in
+                    Sign Up
                   </Link>
                 </div>
               </div>
@@ -153,23 +150,23 @@ export default function Example({ user }: NavbarProps) {
                   </div>
 
                   {/* Mobile menu and search (lg-) */}
-                  <div className='flex flex-1 items-center lg:hidden'>
+                  <div className='flex flex-1 items-center  lg:hidden'>
                     <button
                       type='button'
-                      className='-ml-2 rounded-md bg-white p-2 text-gray-400'
+                      className='-ml-2 rounded-md bg-white p-2 text-gray-700 hover:text-red-500'
                       onClick={() => {
                         console.log('hello')
                         setMobileMenuOpen(true)
                       }}
                     >
-                      <span className='sr-only'>MobileMenuOpen menu</span>
+                      <span className='sr-only'>Open menu</span>
                       <MenuIcon className='h-6 w-6' aria-hidden='true' />
                     </button>
 
                     {/* Search */}
                     <Link
                       to='#'
-                      className='ml-2 p-2 text-gray-400 hover:text-red-600'
+                      className='ml-2 p-2 text-gray-700 hover:text-red-600'
                     >
                       <span className='sr-only'>Search</span>
                       <SearchIcon className='h-6 w-6' aria-hidden='true' />
@@ -184,56 +181,19 @@ export default function Example({ user }: NavbarProps) {
 
                   <div className='flex flex-1 items-center justify-end'>
                     <div className='flex items-center lg:ml-8'>
-                      <div className='flex space-x-8'>
-                        <div className='hidden lg:flex'>
-                          <Link
-                            to='#'
-                            className='-m-2 p-2 text-gray-400 hover:text-red-600'
-                          >
-                            <span className='sr-only'>Search</span>
-                            <SearchIcon
-                              className='h-6 w-6'
-                              aria-hidden='true'
-                            />
-                          </Link>
-                        </div>
+                      <div className='flex space-x-8'></div>
 
-                        <div className='flex'>
-                          {user ? (
-                            <Link
-                              to='/signout'
-                              className='-m-2 p-2 text-gray-400 hover:text-red-600'
-                            >
-                              <span className='sr-only'>Sign out</span>
-                              Sign out
-                            </Link>
-                          ) : (
-                            <Link
-                              to='/signin'
-                              className='-m-2 p-2 text-gray-400 hover:text-red-600'
-                            >
-                              <span className='sr-only'>Account</span>
-                              <UserIcon
-                                className='h-6 w-6'
-                                aria-hidden='true'
-                              />
-                            </Link>
-                          )}
-                        </div>
-                      </div>
-
-                      <span
-                        className='mx-4 h-6 w-px bg-gray-200 lg:mx-6'
-                        aria-hidden='true'
-                      />
-
-                      <div className='flow-root'>
+                      <div className='flex space-x-6'>
                         <Link
-                          to='/cart'
-                          className='group -m-2 flex items-center p-2'
+                          to='#'
+                          className=' text-gray-700 hover:text-red-600'
                         >
+                          <span className='sr-only'>Search</span>
+                          <SearchIcon className='h-6 w-6' aria-hidden='true' />
+                        </Link>
+                        <Link to='/cart' className='group  flex items-center'>
                           <ShoppingCartIcon
-                            className='h-6 w-6 flex-shrink-0 text-gray-400 group-hover:text-red-600'
+                            className='h-6 w-6 flex-shrink-0 text-gray-700 group-hover:text-red-600'
                             aria-hidden='true'
                           />
                           <span className='ml-2 text-sm font-medium text-gray-700 group-hover:text-red-600'>
@@ -243,6 +203,28 @@ export default function Example({ user }: NavbarProps) {
                             items in cart, view bag
                           </span>
                         </Link>
+                      </div>
+
+                      <div className='hidden lg:flex'>
+                        <span
+                          className='mx-4 h-6 w-px bg-gray-200 lg:mx-6'
+                          aria-hidden='true'
+                        />
+
+                        {/* My Account or Sign in */}
+                        {user ? (
+                          <AccountDropdown user={user} />
+                        ) : (
+                          <Link
+                            to='/signin'
+                            className='group -m-2 p-2 text-gray-700 hover:text-red-600'
+                          >
+                            <div className='hidden content-center space-x-2 lg:flex'>
+                              <span className='sr-only'>Sign in</span>
+                              Sign in <ArrowRightIcon className='w-3' />
+                            </div>
+                          </Link>
+                        )}
                       </div>
                     </div>
                   </div>
