@@ -1,7 +1,9 @@
 /* This example requires Tailwind CSS v2.0+ */
 
 import { Role, User } from '@prisma/client'
+import { useState } from 'react'
 import { json, LoaderFunction, redirect, useLoaderData } from 'remix'
+import SlideOver from '~/components/SlideOver'
 import { authenticator } from '~/services/auth.server'
 import { db } from '~/utils/db.server'
 import { products } from './products'
@@ -33,9 +35,15 @@ export let loader: LoaderFunction = async ({ request }) => {
 }
 
 export default function Example() {
+  const [openSlideOver, setOpenSlideOver] = useState(true)
+
   const { users } = useLoaderData()
   return (
     <>
+      <SlideOver
+        openSlideOver={openSlideOver}
+        setOpenSlideOver={setOpenSlideOver}
+      />
       <div className=' bg-white px-4 py-5 pt-24 sm:px-6'>
         <h3 className='text-3xl font-extrabold leading-6 text-gray-900'>
           Manage Users
@@ -82,14 +90,20 @@ export default function Example() {
                     >
                       Email
                     </th>
-                    <th scope='col' className='relative px-6 py-3'>
+                    {/* <th scope='col' className='relative px-6 py-3'>
                       <span className='sr-only'>Action</span>
-                    </th>
+                    </th> */}
                   </tr>
                 </thead>
                 <tbody className='divide-y divide-gray-200 bg-white'>
                   {users.map((user: User) => (
-                    <tr key={user.id}>
+                    <tr
+                      onClick={() => {
+                        setOpenSlideOver(true)
+                      }}
+                      key={user.id}
+                      className='hover:cursor-pointer hover:bg-red-50'
+                    >
                       <td className='wrap px-6 py-4'>
                         <div className='text-sm text-gray-900'>{user.name}</div>
                       </td>
@@ -118,11 +132,6 @@ export default function Example() {
                       <td className='whitespace-nowrap px-6 py-4 text-sm text-gray-900'>
                         {user.brand}
                       </td> */}
-                      <td className='whitespace-nowrap px-6 py-4 text-right text-sm font-medium'>
-                        <a href='#' className='text-red-500 hover:text-red-600'>
-                          Edit
-                        </a>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
