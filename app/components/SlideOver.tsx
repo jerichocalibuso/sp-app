@@ -1,23 +1,21 @@
 /* This example requires Tailwind CSS v2.0+ */
-import { Fragment, useState } from 'react'
+import { Fragment } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { XIcon } from '@heroicons/react/outline'
-import {
-  ArrowDownIcon,
-  ChevronDownIcon,
-  LinkIcon,
-  PlusSmIcon,
-  QuestionMarkCircleIcon,
-} from '@heroicons/react/solid'
+
+import { Role, User } from '@prisma/client'
+import { Form } from 'remix'
 
 interface SlideOverProps {
   openSlideOver: boolean
   setOpenSlideOver: React.Dispatch<React.SetStateAction<boolean>>
+  selectedUser: User | null
 }
 
 export default function SlideOver({
   openSlideOver,
   setOpenSlideOver,
+  selectedUser,
 }: SlideOverProps) {
   return (
     <Transition.Root show={openSlideOver} as={Fragment}>
@@ -54,6 +52,7 @@ export default function SlideOver({
                   <div className='h-0 flex-1 overflow-y-auto'>
                     <div className='border-b py-6 px-4 sm:px-6'>
                       <div className='flex items-center justify-between'>
+                        <Form method='post'><button type='submit'>Submit</button></Form>
                         <Dialog.Title className='text-lg font-medium text-black'>
                           {' '}
                           Edit User{' '}
@@ -86,6 +85,7 @@ export default function SlideOver({
                                 type='text'
                                 name='name'
                                 id='name'
+                                value={selectedUser?.name || ''}
                                 className='block w-full rounded-md  border border-gray-300 p-3 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'
                               />
                             </div>
@@ -98,11 +98,10 @@ export default function SlideOver({
                             <select
                               id='role'
                               name='role'
+                              value={selectedUser?.role || ''}
                               className='mt-1 relative block w-full rounded-md border border-gray-300 bg-transparent p-3 shadow-sm focus:z-10 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'
                             >
-                              <option>ADMIN</option>
-                              <option>RIDER</option>
-                              <option>CUSTOMER</option>
+                              {Object.values(Role).map((role) => (<option value={role}>{role}</option>))}
                             </select>
                           </div>
                           <div>
@@ -116,7 +115,7 @@ export default function SlideOver({
                             <div className='mt-1'>
                               <span
                                 className='block w-full rounded-md  border bg-gray-50 text-gray-500 border-gray-300 p-3 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'
-                                >jericho</span>
+                                >{selectedUser?.username || 'N/A'}</span>
                             </div>
                           </div>
                           <div>
@@ -130,7 +129,7 @@ export default function SlideOver({
                             <div className='mt-1'>
                               <span
                                 className='block w-full rounded-md  border bg-gray-50 text-gray-500 border-gray-300 p-3 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'
-                                >Facebook</span>
+                                >{selectedUser?.provider || 'N/A'}</span>
                             </div>
                           </div>
                           <div>
@@ -144,7 +143,7 @@ export default function SlideOver({
                             <div className='mt-1'>
                               <span
                                 className='block w-full rounded-md  border bg-gray-50 text-gray-500 border-gray-300 p-3 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'
-                              >jericho@jericho.com</span>
+                              >{selectedUser?.email || 'N/A'}</span>
                             </div>
                           </div>
 

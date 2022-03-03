@@ -2,7 +2,7 @@
 
 import { Role, User } from '@prisma/client'
 import { useState } from 'react'
-import { json, LoaderFunction, redirect, useLoaderData } from 'remix'
+import { ActionFunction, json, LoaderFunction, redirect, useLoaderData } from 'remix'
 import SlideOver from '~/components/SlideOver'
 import { authenticator } from '~/services/auth.server'
 import { db } from '~/utils/db.server'
@@ -34,8 +34,10 @@ export let loader: LoaderFunction = async ({ request }) => {
   return json({ users })
 }
 
+
 export default function Example() {
   const [openSlideOver, setOpenSlideOver] = useState(true)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
 
   const { users } = useLoaderData()
   return (
@@ -43,6 +45,7 @@ export default function Example() {
       <SlideOver
         openSlideOver={openSlideOver}
         setOpenSlideOver={setOpenSlideOver}
+        selectedUser={selectedUser}
       />
       <div className=' bg-white px-4 py-5 pt-24 sm:px-6'>
         <h3 className='text-3xl font-extrabold leading-6 text-gray-900'>
@@ -100,6 +103,7 @@ export default function Example() {
                     <tr
                       onClick={() => {
                         setOpenSlideOver(true)
+                        setSelectedUser(user)
                       }}
                       key={user.id}
                       className='hover:cursor-pointer hover:bg-red-50'
