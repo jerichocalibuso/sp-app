@@ -41,7 +41,6 @@ export const Input = forwardRef(
       formId: form,
     })
 
-    const actualValue = value ?? (type === 'checkbox' ? 'on' : undefined)
     return (
       <div>
         <label
@@ -52,16 +51,16 @@ export const Input = forwardRef(
         </label>
         <div className='mt-1'>
           <input
+            defaultValue={value}
             data-testid={dataTestId}
             className={`block w-full appearance-none rounded-md border ${
               error ? 'border-red-500' : 'border-gray-300'
-            } px-3 py-2 placeholder-gray-400 shadow-sm focus:border-red-500 focus:outline-none focus:ring-red-500 sm:text-sm ${className}`}
+            } p-3 placeholder-gray-400 shadow-sm focus:border-red-500 focus:outline-none focus:ring-red-500 sm:text-sm ${className}`}
             {...getInputProps({
               form,
               type,
               ref,
               id: name,
-              value: actualValue,
               autoComplete,
               placeholder,
             })}

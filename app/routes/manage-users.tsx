@@ -1,19 +1,29 @@
 /* This example requires Tailwind CSS v2.0+ */
 
 import { Role, User } from '@prisma/client'
+import { withZod } from '@remix-validated-form/with-zod'
 import { useState } from 'react'
-import { ActionFunction, json, LoaderFunction, redirect, useLoaderData } from 'remix'
-import SlideOver from '~/components/SlideOver'
+import {
+  ActionFunction,
+  json,
+  LoaderFunction,
+  redirect,
+  useLoaderData,
+} from 'remix'
+import { validationError } from 'remix-validated-form'
+import invariant from 'tiny-invariant'
+import { z } from 'zod'
+import { zfd } from 'zod-form-data'
+import ManageUsersForm from '~/components/ManageUserForm'
 import { authenticator } from '~/services/auth.server'
 import { db } from '~/utils/db.server'
-import { products } from './products'
 
 export let loader: LoaderFunction = async ({ request }) => {
   const user = await authenticator.isAuthenticated(request, {
     failureRedirect: '/signin',
   })
 
-  const { role } = user
+  const { role, id } = user
   if (role !== Role.ADMIN) {
     return redirect('/unauthorized')
   }
@@ -31,18 +41,71 @@ export let loader: LoaderFunction = async ({ request }) => {
     orderBy: { updatedAt: 'desc' },
   })
 
-  return json({ users })
+  const usersWithoutCurrentUser = users.filter((user) => user?.id !== id)
+
+  return json({ users: usersWithoutCurrentUser })
 }
 
+export const validator = withZod(
+  z.object({
+    name: zfd.text(
+      z.string({
+        required_error: 'Name is required',
+      })
+    ),
+    role: zfd.text(
+      z.string({
+        required_error: 'Role is required',
+      })
+    ),
+    userId: zfd.text(
+      z.string({
+        required_error: 'User id is invalid',
+      })
+    ),
+  })
+)
 
+export const action: ActionFunction = async ({ request }) => {
+  const formData = await request.formData()
+
+  if (formData.get('_method') === 'delete') {
+    const userId = formData.get('userId') as string
+    invariant(userId, 'userId is not found.')
+    const user = await db.user.delete({
+      where: { id: userId },
+    })
+    return redirect('/manage-users')
+  }
+
+  const result = await validator.validate(formData)
+  if (result.error) {
+    // validationError comes from `remix-validated-form`
+    return validationError(result.error)
+  }
+
+  const { name, role, userId } = result.data
+
+  await db.user.update({
+    where: {
+      id: userId,
+    },
+    data: {
+      name,
+      role: role as Role,
+    },
+  })
+
+  return redirect('/manage-users')
+}
 export default function Example() {
-  const [openSlideOver, setOpenSlideOver] = useState(true)
+  const [openSlideOver, setOpenSlideOver] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
 
   const { users } = useLoaderData()
   return (
     <>
-      <SlideOver
+      <ManageUsersForm
         openSlideOver={openSlideOver}
         setOpenSlideOver={setOpenSlideOver}
         selectedUser={selectedUser}
