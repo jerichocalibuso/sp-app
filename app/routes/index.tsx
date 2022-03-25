@@ -191,7 +191,7 @@ export default function IndexPage() {
                 <div className='mx-auto max-w-2xl py-24 md:pt-40 lg:max-w-none lg:py-64'>
                   <div className='lg:pr-16'>
                     <h1 className='text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl'>
-                      Quality meats at your fingertips
+                      Affordable meat at your fingertips
                     </h1>
                     <p className='mt-4 text-xl text-gray-600'>
                       Choose from our wide selection of freshly prepared meats
