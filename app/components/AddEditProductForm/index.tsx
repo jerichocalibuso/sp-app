@@ -120,7 +120,7 @@ export default function AddEditProductForm({
                       ) : (
                         <div></div>
                       )}
-                      <div>
+                      <div className='flex content-center'>
                         <button
                           type='button'
                           className='rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2'
@@ -133,7 +133,7 @@ export default function AddEditProductForm({
                           type='submit'
                           className={`${
                             transition.submission && 'cursor-progress'
-                          } ml-4 inline-flex justify-center rounded-md border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2`}
+                          } ml-4 inline-flex justify-center rounded-md border border-transparent bg-red-600 py-2.5 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2`}
                           // onClick={() => { // undecided for this
                           //   if (transition.state !== 'submitting') {
                           //     setOpenSlideOver(false)
@@ -141,28 +141,30 @@ export default function AddEditProductForm({
                           // }}
                         >
                           {transition.submission ? (
-                            <svg
-                              className='-ml-1 mr-3 h-5 w-5 animate-spin text-white'
-                              xmlns='http://www.w3.org/2000/svg'
-                              fill='none'
-                              viewBox='0 0 24 24'
-                            >
-                              <circle
-                                className='opacity-25'
-                                cx='12'
-                                cy='12'
-                                r='10'
-                                stroke='currentColor'
-                                strokeWidth='4'
-                              ></circle>
-                              <path
-                                className='opacity-75'
-                                fill='currentColor'
-                                d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
-                              ></path>
-                            </svg>
+                            <div className='flex w-8 items-stretch justify-center'>
+                              <svg
+                                className='w-5 animate-spin text-white'
+                                xmlns='http://www.w3.org/2000/svg'
+                                fill='none'
+                                viewBox='0 0 24 24'
+                              >
+                                <circle
+                                  className='opacity-25'
+                                  cx='12'
+                                  cy='12'
+                                  r='10'
+                                  stroke='currentColor'
+                                  strokeWidth='4'
+                                ></circle>
+                                <path
+                                  className='opacity-75'
+                                  fill='currentColor'
+                                  d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
+                                ></path>
+                              </svg>
+                            </div>
                           ) : (
-                            'Submit'
+                            'Save'
                           )}
                         </button>
                       </div>

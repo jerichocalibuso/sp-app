@@ -68,9 +68,7 @@ export default function App() {
   )
 }
 
-export function CatchBoundary() {
-  const caught = useCatch()
-
+export function ErrorBoundary() {
   return (
     <html lang='en'>
       <head>

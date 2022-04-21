@@ -18,8 +18,6 @@ export function ProductImageDropzone() {
       maxFiles: 1,
       maxSize: 10000000,
       onDropAccepted: (acceptedFiles) => {
-        console.log(`acceptedFiles: ${JSON.stringify(acceptedFiles, null, 2)}`)
-
         setFiles(
           acceptedFiles.map((file) =>
             Object.assign(file, {
@@ -97,15 +95,9 @@ export function ProductImageDropzone() {
               <div className='flex text-sm text-gray-600'>
                 <label
                   htmlFor='file-upload'
-                  className='focus-within:outpne-none relative cursor-pointer rounded-md bg-white font-medium text-indigo-600 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2 hover:text-indigo-500'
+                  className='focus-within:outpne-none relative cursor-pointer rounded-md bg-white font-medium text-red-600 focus-within:ring-2 focus-within:ring-red-500 focus-within:ring-offset-2 hover:text-red-500'
                 >
                   <span>Upload a file</span>
-                  <input
-                    id='file-upload'
-                    name='file-upload'
-                    type='file'
-                    className='sr-only'
-                  />
                 </label>
                 <p className='pl-1'>or drag and drop</p>
               </div>
@@ -113,11 +105,7 @@ export function ProductImageDropzone() {
             </div>
           </div>
         </div>
-        {error && (
-          <p className='text-sm text-red-500'>
-            {'Product image input is required.'}
-          </p>
-        )}
+        {error && <p className='text-sm text-red-500'>{error}</p>}
 
         {acceptedFileItems}
         {fileRejections.length > 0 ? (

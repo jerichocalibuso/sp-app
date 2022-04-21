@@ -1,4 +1,5 @@
 import cloudinary from 'cloudinary'
+import { json } from 'remix'
 import type { Stream } from 'stream'
 
 cloudinary.v2.config({
@@ -24,5 +25,22 @@ async function uploadImage(fileStream: Stream) {
   })
 }
 
-console.log('configs', cloudinary.v2.config())
-export { uploadImage }
+async function deleteImage(publicId: string) {
+  return new Promise((resolve, reject) => {
+    const destroyedImageInfo = cloudinary.v2.uploader.destroy(
+      publicId,
+      (error, result) => {
+        if (error) {
+          reject(error)
+        }
+        console.log('image deleted successfully')
+        resolve(result)
+      }
+    )
+    return destroyedImageInfo
+  })
+}
+
+const badRequest = (data: any) => json(data, { status: 400 })
+
+export { uploadImage, deleteImage, badRequest }

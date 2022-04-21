@@ -1,24 +1,24 @@
-/* This example requires Tailwind CSS v2.0+ */
-
-import { Category, Product } from '@prisma/client'
+import { Category, Product, Role } from '@prisma/client'
 import { withZod } from '@remix-validated-form/with-zod'
 import { useState } from 'react'
 import {
   ActionFunction,
   json,
+  LoaderFunction,
   redirect,
-  unstable_createFileUploadHandler,
   unstable_parseMultipartFormData,
   UploadHandler,
+  useCatch,
+  useLoaderData,
 } from 'remix'
 import { validationError } from 'remix-validated-form'
 import invariant from 'tiny-invariant'
 import { z } from 'zod'
 import { zfd } from 'zod-form-data'
 import AddEditProductForm from '~/components/AddEditProductForm'
+import { authenticator } from '~/services/auth.server'
 import { db } from '~/utils/db.server'
-import { uploadImage } from '~/utils/utils.server'
-import { products } from './products'
+import { deleteImage, uploadImage } from '~/utils/utils.server'
 
 const baseSchema = z.object({
   name: zfd.text(
@@ -36,7 +36,11 @@ const baseSchema = z.object({
 export const clientValidator = withZod(
   baseSchema.and(
     z.object({
-      image: zfd.file(),
+      image: zfd.file(
+        z.string({
+          required_error: 'Product image is required',
+        })
+      ),
     })
   )
 )
@@ -61,10 +65,42 @@ export const action: ActionFunction = async ({ request }) => {
 
   const formData = await unstable_parseMultipartFormData(request, uploadHandler)
 
-  const imgSrc = formData.get('image')
-  if (!imgSrc) {
-    throw new Error('Image upload error')
+  const imageLink = formData.get('image')
+
+  if (!imageLink) {
+    return validationError({
+      fieldErrors: {
+        image: 'Unable to upload the image, please try again.',
+      },
+    })
   }
+
+  const productName = formData.get('name') as string
+
+  const existingProduct = await db.product.findFirst({
+    where: {
+      name: productName,
+    },
+  })
+
+  if (existingProduct) {
+    const url = imageLink as string
+    const publicId = url.split('/').pop()?.split('.')?.shift() as string
+    await deleteImage(publicId)
+    return validationError({
+      fieldErrors: {
+        name: 'Product name already exists',
+      },
+    })
+  }
+
+  const result = await serverValidator.validate(formData)
+  if (result.error) {
+    // validationError comes from `remix-validated-form`
+    return validationError(result.error)
+  }
+
+  const { name, category, image: imageUrl } = result.data
 
   // if (formData.get('_method') === 'delete') {
   //   const userId = formData.get('userId') as string
@@ -74,30 +110,51 @@ export const action: ActionFunction = async ({ request }) => {
   //   })
   //   return redirect('/manage-users')
   // }
-  const result = await serverValidator.validate(formData)
-  if (result.error) {
-    // validationError comes from `remix-validated-form`
-    return validationError(result.error)
+
+  try {
+    await db.product.create({
+      data: {
+        name,
+        category: category as Category,
+        imageUrl,
+      },
+    })
+  } catch (error) {
+    throw new Response('Unable to create the product', { status: 500 })
   }
 
-  const { name, category, image: imageUrl } = result.data
+  return redirect('/manage-products')
+}
 
-  await db.product.create({
-    data: {
-      name,
-      category: category as Category,
-      imageUrl,
-    },
+export let loader: LoaderFunction = async ({ request }) => {
+  const user = await authenticator.isAuthenticated(request, {
+    failureRedirect: '/signin',
   })
 
-  return redirect('/manage-products')
+  const { role, id } = user
+  if (role !== Role.ADMIN) {
+    return redirect('/unauthorized')
+  }
+
+  const products = await db.product.findMany({
+    take: 10,
+    select: {
+      id: true,
+      name: true,
+      imageUrl: true,
+      category: true,
+    },
+    orderBy: { updatedAt: 'desc' },
+  })
+
+  return json({ products })
 }
 
 export default function Example() {
   const [openSlideOver, setOpenSlideOver] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
-  console.log(`selectedProduct: ${selectedProduct}`)
 
+  const { products } = useLoaderData()
   return (
     <>
       <AddEditProductForm
@@ -134,6 +191,12 @@ export default function Example() {
                       className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'
                     >
                       Product
+                    </th>
+                    <th
+                      scope='col'
+                      className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'
+                    >
+                      Category
                     </th>
 
                     <th
@@ -173,7 +236,7 @@ export default function Example() {
                   </tr>
                 </thead>
                 <tbody className='divide-y divide-gray-200 bg-white'>
-                  {products.map((product) => (
+                  {products.map((product: Product) => (
                     <tr
                       className='hover:cursor-pointer hover:bg-red-50'
                       key={product.id}
@@ -182,17 +245,26 @@ export default function Example() {
                       <td className='whitespace-nowrap px-6 py-4'>
                         <div className='flex items-center'>
                           <div className='h-10 w-10 flex-shrink-0'>
-                            <img
-                              className='h-10 w-10 rounded-md'
-                              src={product.imageSrc}
-                              alt=''
-                            />
+                            {product.imageUrl ? (
+                              <img
+                                className='h-10 w-10 rounded-md'
+                                src={product.imageUrl}
+                                alt=''
+                              />
+                            ) : (
+                              <div className='h-10 w-10 rounded-md bg-gray-500' />
+                            )}
                           </div>
                           <div className='ml-4'>
                             <div className='text-sm font-medium text-gray-900'>
                               {product.name}
                             </div>
                           </div>
+                        </div>
+                      </td>
+                      <td className='wrap px-6 py-4'>
+                        <div className='text-sm text-gray-900'>
+                          {product.category}
                         </div>
                       </td>
                       <td className='wrap px-6 py-4'>
