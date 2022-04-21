@@ -8,7 +8,7 @@ import { useLoaderData, useTransition } from 'remix'
 import { ValidatedForm } from 'remix-validated-form'
 import { validator } from '~/routes/manage-users'
 import { Input } from '../Input'
-import { Select } from '../Select'
+import { RoleSelect } from '../RoleSelect'
 import ConfirmDeleteModal from './ConfirmDeleteModal'
 
 interface ManageUsersForm {
@@ -99,7 +99,7 @@ export default function ManageUsersForm({
                               }`}
                             />
 
-                            <Select
+                            <RoleSelect
                               name='role'
                               label='Role'
                               value={selectedUser?.role || ''}

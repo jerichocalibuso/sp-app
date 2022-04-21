@@ -6,10 +6,10 @@ import { TrashIcon, XIcon } from '@heroicons/react/outline'
 import { Product } from '@prisma/client'
 import { useLoaderData, useTransition } from 'remix'
 import { ValidatedForm } from 'remix-validated-form'
-import { validator } from '~/routes/manage-users'
+import { clientValidator } from '~/routes/manage-products'
 import { Input } from '../Input'
-import { Select } from '../Select'
 import { ProductImageDropzone } from './ProductImageDropzone'
+import { CategorySelect } from '../CategorySelect'
 
 interface AddEditProductForm {
   openSlideOver: boolean
@@ -58,9 +58,10 @@ export default function AddEditProductForm({
               >
                 <div className='pointer-events-auto w-screen max-w-md'>
                   <ValidatedForm
+                    encType='multipart/form-data'
                     method='post'
                     className='flex h-full flex-col divide-y divide-gray-200 bg-white shadow-xl'
-                    {...{ validator }}
+                    validator={clientValidator}
                   >
                     <div className='h-0 flex-1 overflow-y-auto'>
                       <div className='border-b py-6 px-4 sm:px-6'>
@@ -94,7 +95,7 @@ export default function AddEditProductForm({
                               }`}
                             />
 
-                            <Select
+                            <CategorySelect
                               name='category'
                               label='Category'
                               value={selectedProduct?.category || ''}

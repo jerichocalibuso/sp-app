@@ -1,10 +1,3 @@
-;<div>
-  <label htmlFor='username'>Username</label>
-  <div className='mt-1'>
-    <input name='username' type='username' autoComplete='username' />
-  </div>
-</div>
-
 import React, { forwardRef } from 'react'
 import { useField, useFormContext } from 'remix-validated-form'
 

@@ -155,7 +155,6 @@ export default function Example({ user }: NavbarProps) {
                       type='button'
                       className='-ml-2 rounded-md bg-white p-2 text-gray-700 hover:text-red-500'
                       onClick={() => {
-                        console.log('hello')
                         setMobileMenuOpen(true)
                       }}
                     >

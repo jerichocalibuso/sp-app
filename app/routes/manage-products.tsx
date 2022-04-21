@@ -1,9 +1,97 @@
 /* This example requires Tailwind CSS v2.0+ */
 
-import { Product } from '@prisma/client'
+import { Category, Product } from '@prisma/client'
+import { withZod } from '@remix-validated-form/with-zod'
 import { useState } from 'react'
+import {
+  ActionFunction,
+  json,
+  redirect,
+  unstable_createFileUploadHandler,
+  unstable_parseMultipartFormData,
+  UploadHandler,
+} from 'remix'
+import { validationError } from 'remix-validated-form'
+import invariant from 'tiny-invariant'
+import { z } from 'zod'
+import { zfd } from 'zod-form-data'
 import AddEditProductForm from '~/components/AddEditProductForm'
+import { db } from '~/utils/db.server'
+import { uploadImage } from '~/utils/utils.server'
 import { products } from './products'
+
+const baseSchema = z.object({
+  name: zfd.text(
+    z.string({
+      required_error: 'Name is required',
+    })
+  ),
+  category: zfd.text(
+    z.string({
+      required_error: 'Category is required',
+    })
+  ),
+})
+
+export const clientValidator = withZod(
+  baseSchema.and(
+    z.object({
+      image: zfd.file(),
+    })
+  )
+)
+
+const serverValidator = withZod(
+  baseSchema.and(
+    z.object({
+      image: z.string(),
+    })
+  )
+)
+
+export const action: ActionFunction = async ({ request }) => {
+  const uploadHandler: UploadHandler = async ({ name, stream }) => {
+    if (name !== 'image') {
+      stream.resume()
+      return
+    }
+    const uploadedImage: any = await uploadImage(stream)
+    return uploadedImage.secure_url
+  }
+
+  const formData = await unstable_parseMultipartFormData(request, uploadHandler)
+
+  const imgSrc = formData.get('image')
+  if (!imgSrc) {
+    throw new Error('Image upload error')
+  }
+
+  // if (formData.get('_method') === 'delete') {
+  //   const userId = formData.get('userId') as string
+  //   invariant(userId, 'userId is not found.')
+  //   const user = await db.user.delete({
+  //     where: { id: userId },
+  //   })
+  //   return redirect('/manage-users')
+  // }
+  const result = await serverValidator.validate(formData)
+  if (result.error) {
+    // validationError comes from `remix-validated-form`
+    return validationError(result.error)
+  }
+
+  const { name, category, image: imageUrl } = result.data
+
+  await db.product.create({
+    data: {
+      name,
+      category: category as Category,
+      imageUrl,
+    },
+  })
+
+  return redirect('/manage-products')
+}
 
 export default function Example() {
   const [openSlideOver, setOpenSlideOver] = useState(false)

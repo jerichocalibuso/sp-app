@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { FileError, useDropzone } from 'react-dropzone'
+import { useLoaderData } from 'remix'
+import { useField } from 'remix-validated-form'
 import invariant from 'tiny-invariant'
+import { Input } from '../Input'
 
 interface CustomFile extends File {
   preview?: string
@@ -64,12 +67,15 @@ export function ProductImageDropzone() {
     )
   )
 
+  const { error } = useField('image')
+
   return (
     <section className='container'>
       <div {...getRootProps({ className: 'dropzone' })}>
-        <input {...getInputProps()} />
+        <input id='image-input' type='file' name='image' {...getInputProps()} />
+
         <div>
-          <label className='block text-sm font-medium text-gray-700'>
+          <label className='block text-sm font-medium text-gray-900'>
             Product image
           </label>
           <div className='mt-1 flex justify-center rounded-md border-2 border-dashed border-gray-300 px-6 pt-5 pb-6'>
@@ -103,10 +109,16 @@ export function ProductImageDropzone() {
                 </label>
                 <p className='pl-1'>or drag and drop</p>
               </div>
-              <p className='text-xs text-gray-500'>PNG, JPG, GIF up to 10MB</p>
+              <p className='text-xs text-gray-500'>PNG, JPG, JPEG up to 10MB</p>
             </div>
           </div>
         </div>
+        {error && (
+          <p className='text-sm text-red-500'>
+            {'Product image input is required.'}
+          </p>
+        )}
+
         {acceptedFileItems}
         {fileRejections.length > 0 ? (
           <div className='mt-4'>

@@ -8,7 +8,7 @@ type SelectProps = {
   className?: string
 }
 
-export const Select = ({ name, label, value, className }: SelectProps) => {
+export const RoleSelect = ({ name, label, value, className }: SelectProps) => {
   const { error, getInputProps } = useField(name)
 
   return (
@@ -19,7 +19,7 @@ export const Select = ({ name, label, value, className }: SelectProps) => {
       <select
         {...getInputProps({ id: name })}
         defaultValue={value}
-        className={`block w-full appearance-none rounded-md border ${
+        className={`mt-1 block w-full appearance-none rounded-md border ${
           error ? 'border-red-500' : 'border-gray-300'
         } p-3 placeholder-gray-400 shadow-sm focus:border-red-500 focus:outline-none focus:ring-red-500 sm:text-sm ${className}`}
       >
