@@ -249,7 +249,8 @@ export default function Example() {
                               <img
                                 className='h-10 w-10 rounded-md'
                                 src={product.imageUrl}
-                                alt=''
+                                alt={product.name}
+                                loading='lazy'
                               />
                             ) : (
                               <div className='h-10 w-10 rounded-md bg-gray-500' />
