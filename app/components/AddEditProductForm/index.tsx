@@ -4,12 +4,13 @@ import { Dialog, Transition } from '@headlessui/react'
 import { TrashIcon, XIcon } from '@heroicons/react/outline'
 
 import { Product } from '@prisma/client'
-import { useLoaderData, useTransition } from 'remix'
+import { useActionData, useLoaderData, useTransition } from 'remix'
 import { ValidatedForm } from 'remix-validated-form'
 import { clientValidator } from '~/routes/manage-products'
 import { Input } from '../Input'
 import { ProductImageDropzone } from './ProductImageDropzone'
 import { CategorySelect } from '../CategorySelect'
+import { Fieldset } from '../Fieldset'
 
 interface AddEditProductForm {
   openSlideOver: boolean
@@ -23,6 +24,7 @@ export default function AddEditProductForm({
   selectedProduct,
 }: AddEditProductForm) {
   const loaderData = useLoaderData()
+  const actionData = useActionData()
   const transition = useTransition()
 
   return (
@@ -94,7 +96,6 @@ export default function AddEditProductForm({
                                 loaderData?.error?.message && 'border-red-500'
                               }`}
                             />
-
                             <CategorySelect
                               name='category'
                               label='Category'
@@ -103,8 +104,58 @@ export default function AddEditProductForm({
                                 loaderData?.error?.message && 'border-red-500'
                               }`}
                             />
+                            {/* price, stock, weight, description, brand, */}
+                            <Input
+                              name='price'
+                              label='Price'
+                              type='text'
+                              value={selectedProduct?.price?.toString() || '0'}
+                              className={`${
+                                loaderData?.error?.message && 'border-red-500'
+                              }`}
+                            />
+                            <Input
+                              name='stock'
+                              label='Stock'
+                              type='text'
+                              value={selectedProduct?.stock?.toString() || '0'}
+                              className={`${
+                                loaderData?.error?.message && 'border-red-500'
+                              }`}
+                            />
+                            <Input
+                              name='weight'
+                              label='Weight per Qty'
+                              type='text'
+                              value={selectedProduct?.weight?.toString() || '0'}
+                              className={`${
+                                loaderData?.error?.message && 'border-red-500'
+                              }`}
+                            />
 
-                            <ProductImageDropzone />
+                            <Fieldset
+                              name='description'
+                              label='Description'
+                              value={selectedProduct?.description || ''}
+                              className={`${
+                                loaderData?.error?.message && 'border-red-500'
+                              }`}
+                            />
+
+                            <Input
+                              name='brand'
+                              label='Brand'
+                              type='text'
+                              value={selectedProduct?.brand || ''}
+                              className={`${
+                                loaderData?.error?.message && 'border-red-500'
+                              }`}
+                            />
+
+                            <ProductImageDropzone
+                              imageUrl={selectedProduct?.imageUrl || ''}
+                              name={selectedProduct?.name || ''}
+                            />
                           </div>
                         </div>
                       </div>
@@ -133,15 +184,10 @@ export default function AddEditProductForm({
                           type='submit'
                           className={`${
                             transition.submission && 'cursor-progress'
-                          } ml-4 inline-flex justify-center rounded-md border border-transparent bg-red-600 py-2.5 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2`}
-                          // onClick={() => { // undecided for this
-                          //   if (transition.state !== 'submitting') {
-                          //     setOpenSlideOver(false)
-                          //   }
-                          // }}
+                          } ml-4 inline-flex  justify-center rounded-md border border-transparent bg-red-600 py-2.5 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2`}
                         >
                           {transition.submission ? (
-                            <div className='flex w-8 items-stretch justify-center'>
+                            <div className='flex w-12 items-stretch justify-center'>
                               <svg
                                 className='w-5 animate-spin text-white'
                                 xmlns='http://www.w3.org/2000/svg'
@@ -164,7 +210,7 @@ export default function AddEditProductForm({
                               </svg>
                             </div>
                           ) : (
-                            'Save'
+                            'Submit'
                           )}
                         </button>
                       </div>

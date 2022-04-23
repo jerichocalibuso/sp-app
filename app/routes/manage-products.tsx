@@ -8,11 +8,9 @@ import {
   redirect,
   unstable_parseMultipartFormData,
   UploadHandler,
-  useCatch,
   useLoaderData,
 } from 'remix'
 import { validationError } from 'remix-validated-form'
-import invariant from 'tiny-invariant'
 import { z } from 'zod'
 import { zfd } from 'zod-form-data'
 import AddEditProductForm from '~/components/AddEditProductForm'
@@ -21,26 +19,37 @@ import { db } from '~/utils/db.server'
 import { deleteImage, uploadImage } from '~/utils/utils.server'
 
 const baseSchema = z.object({
-  name: zfd.text(
-    z.string({
-      required_error: 'Name is required',
-    })
+  name: zfd.text(z.string().nonempty('Name is required')),
+  category: zfd.text(z.string().nonempty('Name is required')),
+  price: zfd.numeric(
+    z
+      .number()
+      .int('Price must be an integer.')
+      .positive('Price must be greater than 0.')
   ),
-  category: zfd.text(
-    z.string({
-      required_error: 'Category is required',
-    })
+  stock: zfd.numeric(
+    z
+      .number()
+      .int('Stock must be an integer.')
+      .positive('Stock must be greater than 0.')
   ),
+  weight: zfd.numeric(
+    z
+      .number()
+      .int('Weight must be an integer.')
+      .positive('Weight must be greater than 0.')
+  ),
+  description: zfd.text(
+    z.string().max(280, { message: 'Must be 280 or fewer characters long.' })
+  ),
+
+  brand: zfd.text(z.string()),
 })
 
 export const clientValidator = withZod(
   baseSchema.and(
     z.object({
-      image: zfd.file(
-        z.string({
-          required_error: 'Product image is required',
-        })
-      ),
+      image: zfd.file(),
     })
   )
 )
@@ -100,16 +109,25 @@ export const action: ActionFunction = async ({ request }) => {
     return validationError(result.error)
   }
 
-  const { name, category, image: imageUrl } = result.data
+  const {
+    name,
+    category,
+    image: imageUrl,
+    price,
+    stock,
+    weight,
+    description,
+    brand,
+  } = result.data
 
-  // if (formData.get('_method') === 'delete') {
-  //   const userId = formData.get('userId') as string
-  //   invariant(userId, 'userId is not found.')
-  //   const user = await db.user.delete({
-  //     where: { id: userId },
-  //   })
-  //   return redirect('/manage-users')
-  // }
+  if (formData.get('_method') === 'delete') {
+    const userId = formData.get('userId') as string
+    invariant(userId, 'userId is not found.')
+    const user = await db.user.delete({
+      where: { id: userId },
+    })
+    return redirect('/manage-users')
+  }
 
   try {
     await db.product.create({
@@ -117,6 +135,11 @@ export const action: ActionFunction = async ({ request }) => {
         name,
         category: category as Category,
         imageUrl,
+        price,
+        stock,
+        weight,
+        description,
+        brand,
       },
     })
   } catch (error) {
@@ -138,12 +161,6 @@ export let loader: LoaderFunction = async ({ request }) => {
 
   const products = await db.product.findMany({
     take: 10,
-    select: {
-      id: true,
-      name: true,
-      imageUrl: true,
-      category: true,
-    },
     orderBy: { updatedAt: 'desc' },
   })
 
@@ -240,7 +257,10 @@ export default function Example() {
                     <tr
                       className='hover:cursor-pointer hover:bg-red-50'
                       key={product.id}
-                      onClick={() => setOpenSlideOver(true)}
+                      onClick={() => {
+                        setSelectedProduct(product)
+                        setOpenSlideOver(true)
+                      }}
                     >
                       <td className='whitespace-nowrap px-6 py-4'>
                         <div className='flex items-center'>

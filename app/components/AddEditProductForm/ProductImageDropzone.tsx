@@ -10,7 +10,13 @@ interface CustomFile extends File {
   path?: string
 }
 
-export function ProductImageDropzone() {
+export function ProductImageDropzone({
+  name,
+  imageUrl,
+}: {
+  name?: string
+  imageUrl?: string
+}) {
   const [files, setFiles] = useState<CustomFile[]>([])
   const { acceptedFiles, fileRejections, getRootProps, getInputProps } =
     useDropzone({
@@ -28,7 +34,6 @@ export function ProductImageDropzone() {
       },
     })
 
-  console.log(`acceptedFiles: ${JSON.stringify(acceptedFiles, null, 2)}`)
   const acceptedFileItems = acceptedFiles.map((file: CustomFile) => {
     return files.map((file) => (
       <div key={file.name}>
@@ -76,10 +81,14 @@ export function ProductImageDropzone() {
           <label className='block text-sm font-medium text-gray-900'>
             Product image
           </label>
-          <div className='mt-1 flex justify-center rounded-md border-2 border-dashed border-gray-300 px-6 pt-5 pb-6'>
+          <div
+            className={`mt-1 flex justify-center rounded-md border-2 border-dashed ${
+              error ? 'border-red-500' : 'border-gray-400'
+            } px-6 pt-5 pb-6`}
+          >
             <div className='space-y-1 text-center'>
               <svg
-                className='mx-auto h-12 w-12 text-gray-400'
+                className={`mx-auto h-12 w-12 text-gray-400`}
                 stroke='currentColor'
                 fill='none'
                 viewBox='0 0 48 48'
@@ -105,9 +114,21 @@ export function ProductImageDropzone() {
             </div>
           </div>
         </div>
-        {error && <p className='text-sm text-red-500'>{error}</p>}
+        {error && (
+          <p className='text-sm text-red-500'>{'Product image is invalid.'}</p>
+        )}
 
-        {acceptedFileItems}
+        {imageUrl && name ? (
+          <div key={name}>
+            <img
+              src={imageUrl}
+              alt={name}
+              className='my-2 h-full w-full object-cover object-center sm:rounded-lg'
+            />
+          </div>
+        ) : (
+          acceptedFileItems
+        )}
         {fileRejections.length > 0 ? (
           <div className='mt-4'>
             <p className='text-sm text-red-500'>File input errors:</p>
