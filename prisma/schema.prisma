@@ -84,12 +84,17 @@ enum Category {
 }
 
 model Product {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  Order     Order?   @relation(fields: [orderId], references: [id])
-  orderId   String?
-  imageUrl  String?
-  name      String   @unique
-  category  Category
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  Order       Order?   @relation(fields: [orderId], references: [id])
+  orderId     String?
+  imageUrl    String?
+  name        String   @unique
+  category    Category
+  price       Int
+  weight      Int
+  stock       Int
+  description String?
+  brand       String?
 }
