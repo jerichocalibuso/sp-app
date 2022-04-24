@@ -4,11 +4,10 @@ import { Dialog, Transition } from '@headlessui/react'
 import { TrashIcon, XIcon } from '@heroicons/react/outline'
 
 import { Product } from '@prisma/client'
-import { useActionData, useLoaderData, useTransition } from 'remix'
+import { Link, useLoaderData, useTransition } from 'remix'
 import { ValidatedForm } from 'remix-validated-form'
 import { clientValidator } from '~/routes/manage-products'
 import { Input } from '../Input'
-import { ProductImageDropzone } from './ProductImageDropzone'
 import { CategorySelect } from '../CategorySelect'
 import { Fieldset } from '../Fieldset'
 
@@ -16,15 +15,16 @@ interface AddEditProductForm {
   openSlideOver: boolean
   setOpenSlideOver: React.Dispatch<React.SetStateAction<boolean>>
   selectedProduct: Product | null
+  setOpenUploadImageModal: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 export default function AddEditProductForm({
   openSlideOver,
   setOpenSlideOver,
   selectedProduct,
+  setOpenUploadImageModal,
 }: AddEditProductForm) {
   const loaderData = useLoaderData()
-  const actionData = useActionData()
   const transition = useTransition()
 
   return (
@@ -152,10 +152,41 @@ export default function AddEditProductForm({
                               }`}
                             />
 
-                            <ProductImageDropzone
+                            {/* <ProductImageDropzone
                               imageUrl={selectedProduct?.imageUrl || ''}
                               name={selectedProduct?.name || ''}
-                            />
+                            /> */}
+                            <label className='block text-sm font-medium text-gray-900'>
+                              Product image
+                            </label>
+
+                            {selectedProduct?.imageUrl ? (
+                              <>
+                                <div key={selectedProduct?.name}>
+                                  <img
+                                    src={selectedProduct?.imageUrl}
+                                    alt={selectedProduct?.name}
+                                    className='my-2 h-full w-full object-cover object-center sm:rounded-lg'
+                                  />
+                                </div>
+                                <Link
+                                  to={`/manage-products/${selectedProduct.id}/upload-image`}
+                                  className='inline-flex justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:cursor-pointer hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:w-auto'
+                                >
+                                  Upload new image
+                                </Link>
+                              </>
+                            ) : (
+                              <>
+                                <div className=' inline-flex justify-center rounded-md border border-transparent bg-gray-400 px-4 py-2 text-sm font-medium text-white shadow-sm  focus:outline-none  sm:w-auto'>
+                                  Upload*
+                                </div>
+                                <p className='text-sm text-gray-400'>
+                                  *Product image can only be uploaded when
+                                  editing the product
+                                </p>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>

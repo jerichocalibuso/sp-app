@@ -1,16 +1,9 @@
 import { Category, Product, Role } from '@prisma/client'
 import { withZod } from '@remix-validated-form/with-zod'
-import { useState } from 'react'
-import {
-  ActionFunction,
-  json,
-  LoaderFunction,
-  redirect,
-  unstable_parseMultipartFormData,
-  UploadHandler,
-  useLoaderData,
-} from 'remix'
+import { useEffect, useState } from 'react'
+import { json, LoaderFunction, redirect, useLoaderData } from 'remix'
 import { validationError } from 'remix-validated-form'
+import invariant from 'tiny-invariant'
 import { z } from 'zod'
 import { zfd } from 'zod-form-data'
 import AddEditProductForm from '~/components/AddEditProductForm'
@@ -62,92 +55,63 @@ const serverValidator = withZod(
   )
 )
 
-export const action: ActionFunction = async ({ request }) => {
-  const uploadHandler: UploadHandler = async ({ name, stream }) => {
-    if (name !== 'image') {
-      stream.resume()
-      return
-    }
-    const uploadedImage: any = await uploadImage(stream)
-    return uploadedImage.secure_url
-  }
+// export const action: ActionFunction = async ({ request }) => {
+//   const productName = formData.get('name') as string
 
-  const formData = await unstable_parseMultipartFormData(request, uploadHandler)
+//   const existingProduct = await db.product.findFirst({
+//     where: {
+//       name: productName,
+//     },
+//   })
 
-  const imageLink = formData.get('image')
+//   if (existingProduct) {
+//     const url = imageLink as string
+//     const publicId = url.split('/').pop()?.split('.')?.shift() as string
+//     return validationError({
+//       fieldErrors: {
+//         name: 'Product name already exists',
+//       },
+//     })
+//   }
 
-  if (!imageLink) {
-    return validationError({
-      fieldErrors: {
-        image: 'Unable to upload the image, please try again.',
-      },
-    })
-  }
+//   const result = await serverValidator.validate(formData)
+//   if (result.error) {
+//     // validationError comes from `remix-validated-form`
+//     return validationError(result.error)
+//   }
 
-  const productName = formData.get('name') as string
+//   const { name, category, price, stock, weight, description, brand } =
+//     result.data
 
-  const existingProduct = await db.product.findFirst({
-    where: {
-      name: productName,
-    },
-  })
+//   if (formData.get('_method') === 'delete') {
+//     const userId = formData.get('userId') as string
+//     invariant(userId, 'userId is not found.')
+//     const user = await db.user.delete({
+//       where: { id: userId },
+//     })
+//     return redirect('/manage-users')
+//   }
 
-  if (existingProduct) {
-    const url = imageLink as string
-    const publicId = url.split('/').pop()?.split('.')?.shift() as string
-    await deleteImage(publicId)
-    return validationError({
-      fieldErrors: {
-        name: 'Product name already exists',
-      },
-    })
-  }
+//   try {
+//     await db.product.create({
+//       data: {
+//         name,
+//         category: category as Category,
+//         imageUrl:
+//           'https://res.cloudinary.com/jerichocalibuso/image/upload/v1650783918/sp-app/empty_image_a9urnc.jpg',
+//         price,
+//         stock,
+//         weight,
+//         description,
+//         brand,
+//       },
+//     })
+//   } catch (error) {
+//     throw new Response('Unable to create the product', { status: 500 })
+//   }
 
-  const result = await serverValidator.validate(formData)
-  if (result.error) {
-    // validationError comes from `remix-validated-form`
-    return validationError(result.error)
-  }
-
-  const {
-    name,
-    category,
-    image: imageUrl,
-    price,
-    stock,
-    weight,
-    description,
-    brand,
-  } = result.data
-
-  if (formData.get('_method') === 'delete') {
-    const userId = formData.get('userId') as string
-    invariant(userId, 'userId is not found.')
-    const user = await db.user.delete({
-      where: { id: userId },
-    })
-    return redirect('/manage-users')
-  }
-
-  try {
-    await db.product.create({
-      data: {
-        name,
-        category: category as Category,
-        imageUrl,
-        price,
-        stock,
-        weight,
-        description,
-        brand,
-      },
-    })
-  } catch (error) {
-    throw new Response('Unable to create the product', { status: 500 })
-  }
-
-  return redirect('/manage-products')
-}
+//   return redirect('/manage-products')
+// }
 
 export let loader: LoaderFunction = async ({ request }) => {
   const user = await authenticator.isAuthenticated(request, {
@@ -167,16 +131,30 @@ export let loader: LoaderFunction = async ({ request }) => {
   return json({ products })
 }
 
-export default function Example() {
+export default function ManageProductsRoute() {
   const [openSlideOver, setOpenSlideOver] = useState(false)
+  const [openUploadImageModal, setOpenUploadImageModal] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
 
   const { products } = useLoaderData()
+
+  useEffect(() => {
+    if (!openSlideOver && !selectedProduct) {
+      setSelectedProduct(null)
+    }
+  }, [openSlideOver])
+  console.log('hello')
   return (
     <>
       <AddEditProductForm
-        {...{ openSlideOver, setOpenSlideOver, selectedProduct }}
+        {...{
+          openSlideOver,
+          setOpenSlideOver,
+          selectedProduct,
+          setOpenUploadImageModal,
+        }}
       />
+
       <div className='bg-white px-4 py-5 pt-24 sm:flex sm:items-center sm:px-6'>
         <div className='sm:flex-auto'>
           <h3 className='text-3xl font-extrabold leading-6 text-gray-900'>
