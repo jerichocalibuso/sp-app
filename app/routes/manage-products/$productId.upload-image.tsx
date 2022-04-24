@@ -47,8 +47,7 @@ export const action: ActionFunction = async ({ request, params }) => {
   })
 
   if (product?.imageUrl) {
-    const publicId = imageUrl.split('/').pop()?.split('.')?.shift() as string
-    await deleteImage(publicId)
+    await deleteImage(imageUrl)
   }
 
   await db.product.update({

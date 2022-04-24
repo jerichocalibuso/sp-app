@@ -1,34 +1,39 @@
 /* This example requires Tailwind CSS v2.0+ */
-import { Fragment } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { TrashIcon, XIcon } from '@heroicons/react/outline'
 
 import { Product } from '@prisma/client'
 import { Link, useLoaderData, useTransition } from 'remix'
 import { ValidatedForm } from 'remix-validated-form'
-import { clientValidator } from '~/routes/manage-products'
+import { productValidator } from '~/routes/manage-products'
 import { Input } from '../Input'
 import { CategorySelect } from '../CategorySelect'
 import { Fieldset } from '../Fieldset'
+import ConfirmDeleteModal from './ConfirmDeleteModal'
 
 interface AddEditProductForm {
   openSlideOver: boolean
   setOpenSlideOver: React.Dispatch<React.SetStateAction<boolean>>
   selectedProduct: Product | null
-  setOpenUploadImageModal: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 export default function AddEditProductForm({
   openSlideOver,
   setOpenSlideOver,
   selectedProduct,
-  setOpenUploadImageModal,
 }: AddEditProductForm) {
   const loaderData = useLoaderData()
   const transition = useTransition()
 
+  const [confirmingDeletion, setConfirmingDeletion] = useState(false)
+  const productId = selectedProduct?.id || ''
+
   return (
     <>
+      <ConfirmDeleteModal
+        {...{ confirmingDeletion, setConfirmingDeletion, productId }}
+      />
       <Transition.Root show={openSlideOver} as={Fragment}>
         <Dialog
           as='div'
@@ -60,10 +65,9 @@ export default function AddEditProductForm({
               >
                 <div className='pointer-events-auto w-screen max-w-md'>
                   <ValidatedForm
-                    encType='multipart/form-data'
                     method='post'
                     className='flex h-full flex-col divide-y divide-gray-200 bg-white shadow-xl'
-                    validator={clientValidator}
+                    validator={productValidator}
                   >
                     <div className='h-0 flex-1 overflow-y-auto'>
                       <div className='border-b py-6 px-4 sm:px-6'>
@@ -86,6 +90,13 @@ export default function AddEditProductForm({
                       <div className='flex flex-1 flex-col justify-between'>
                         <div className='px-4 sm:px-6'>
                           <div className='space-y-6 pt-6 pb-5'>
+                            {productId ? (
+                              <input
+                                type='hidden'
+                                name='productId'
+                                value={productId}
+                              />
+                            ) : null}
                             <Input
                               name='name'
                               label='Name'
@@ -194,8 +205,8 @@ export default function AddEditProductForm({
                     <div className='flex flex-shrink-0 content-center justify-between px-4 py-4'>
                       {selectedProduct ? (
                         <button
-                          // onClick={() => setConfirmingDeletion(true)}
-                          className='rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2'
+                          onClick={() => setConfirmingDeletion(true)}
+                          className='rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
                         >
                           <TrashIcon className='h-6 w-6' aria-hidden='true' />
                         </button>
@@ -205,7 +216,7 @@ export default function AddEditProductForm({
                       <div className='flex content-center'>
                         <button
                           type='button'
-                          className='rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2'
+                          className='rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
                           onClick={() => setOpenSlideOver(false)}
                         >
                           Cancel

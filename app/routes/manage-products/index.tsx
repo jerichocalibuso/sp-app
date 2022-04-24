@@ -1,7 +1,13 @@
 import { Category, Product, Role } from '@prisma/client'
 import { withZod } from '@remix-validated-form/with-zod'
 import { useEffect, useState } from 'react'
-import { json, LoaderFunction, redirect, useLoaderData } from 'remix'
+import {
+  ActionFunction,
+  json,
+  LoaderFunction,
+  redirect,
+  useLoaderData,
+} from 'remix'
 import { validationError } from 'remix-validated-form'
 import invariant from 'tiny-invariant'
 import { z } from 'zod'
@@ -39,79 +45,94 @@ const baseSchema = z.object({
   brand: zfd.text(z.string()),
 })
 
-export const clientValidator = withZod(
-  baseSchema.and(
-    z.object({
-      image: zfd.file(),
+export const productValidator = withZod(baseSchema)
+
+export const action: ActionFunction = async ({ request }) => {
+  const formData = await request.formData()
+
+  if (formData.get('_method') === 'delete') {
+    const productId = formData.get('productId') as string
+    invariant(productId, 'productId is not found.')
+    const product = await db.product.findFirst({
+      where: { id: productId },
+      select: {
+        imageUrl: true,
+      },
     })
-  )
-)
 
-const serverValidator = withZod(
-  baseSchema.and(
-    z.object({
-      image: z.string(),
+    await deleteImage(product?.imageUrl || '')
+    await db.product.delete({
+      where: { id: productId },
     })
-  )
-)
+    return redirect('/manage-products')
+  }
 
-// export const action: ActionFunction = async ({ request }) => {
-//   const productName = formData.get('name') as string
+  const productName = formData.get('name') as string
 
-//   const existingProduct = await db.product.findFirst({
-//     where: {
-//       name: productName,
-//     },
-//   })
+  const existingProduct = await db.product.findFirst({
+    where: {
+      name: productName,
+    },
+  })
 
-//   if (existingProduct) {
-//     const url = imageLink as string
-//     const publicId = url.split('/').pop()?.split('.')?.shift() as string
-//     return validationError({
-//       fieldErrors: {
-//         name: 'Product name already exists',
-//       },
-//     })
-//   }
+  if (existingProduct) {
+    return validationError({
+      fieldErrors: {
+        name: 'Product name already exists',
+      },
+    })
+  }
 
-//   const result = await serverValidator.validate(formData)
-//   if (result.error) {
-//     // validationError comes from `remix-validated-form`
-//     return validationError(result.error)
-//   }
+  const result = await productValidator.validate(formData)
 
-//   const { name, category, price, stock, weight, description, brand } =
-//     result.data
+  if (result.error) {
+    // validationError comes from `remix-validated-form`
+    return validationError(result.error)
+  }
 
-//   if (formData.get('_method') === 'delete') {
-//     const userId = formData.get('userId') as string
-//     invariant(userId, 'userId is not found.')
-//     const user = await db.user.delete({
-//       where: { id: userId },
-//     })
-//     return redirect('/manage-users')
-//   }
+  const { name, category, price, stock, weight, description, brand } =
+    result.data
 
-//   try {
-//     await db.product.create({
-//       data: {
-//         name,
-//         category: category as Category,
-//         imageUrl:
-//           'https://res.cloudinary.com/jerichocalibuso/image/upload/v1650783918/sp-app/empty_image_a9urnc.jpg',
-//         price,
-//         stock,
-//         weight,
-//         description,
-//         brand,
-//       },
-//     })
-//   } catch (error) {
-//     throw new Response('Unable to create the product', { status: 500 })
-//   }
+  const productId = formData.get('productId') as string
+  if (productId) {
+    try {
+      await db.product.update({
+        where: { id: productId },
+        data: {
+          name,
+          category: category as Category,
+          price,
+          stock,
+          weight,
+          description,
+          brand,
+        },
+      })
+    } catch (error) {
+      throw new Response('Unable to create the product', { status: 500 })
+    }
+  } else {
+    try {
+      await db.product.create({
+        data: {
+          name,
+          category: category as Category,
+          imageUrl:
+            'https://res.cloudinary.com/jerichocalibuso/image/upload/v1650783918/sp-app/empty_image_a9urnc.jpg',
+          price,
+          stock,
+          weight,
+          description,
+          brand,
+        },
+      })
+    } catch (error) {
+      throw new Response('Unable to create the product', { status: 500 })
+    }
+  }
 
-//   return redirect('/manage-products')
-// }
+  return redirect('/manage-products')
+}
 
 export let loader: LoaderFunction = async ({ request }) => {
   const user = await authenticator.isAuthenticated(request, {
@@ -133,17 +154,15 @@ export let loader: LoaderFunction = async ({ request }) => {
 
 export default function ManageProductsRoute() {
   const [openSlideOver, setOpenSlideOver] = useState(false)
-  const [openUploadImageModal, setOpenUploadImageModal] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
 
   const { products } = useLoaderData()
 
   useEffect(() => {
-    if (!openSlideOver && !selectedProduct) {
+    if (!openSlideOver) {
       setSelectedProduct(null)
     }
   }, [openSlideOver])
-  console.log('hello')
   return (
     <>
       <AddEditProductForm
@@ -151,7 +170,6 @@ export default function ManageProductsRoute() {
           openSlideOver,
           setOpenSlideOver,
           selectedProduct,
-          setOpenUploadImageModal,
         }}
       />
 

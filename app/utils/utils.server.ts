@@ -25,7 +25,8 @@ async function uploadImage(fileStream: Stream) {
   })
 }
 
-async function deleteImage(publicId: string) {
+async function deleteImage(imageUrl: string) {
+  const publicId = imageUrl.split('/').pop()?.split('.')?.shift() as string
   return new Promise((resolve, reject) => {
     const destroyedImageInfo = cloudinary.v2.uploader.destroy(
       publicId,
