@@ -15,17 +15,20 @@ type FieldsetProps = {
 }
 
 export const Fieldset = forwardRef(
-  ({
-    name,
-    label,
-    value,
-    autoComplete,
-    hideErrors: noErrors,
-    'data-testid': dataTestId,
-    form,
-    className,
-    placeholder,
-  }: FieldsetProps) => {
+  (
+    {
+      name,
+      label,
+      value,
+      autoComplete,
+      hideErrors: noErrors,
+      'data-testid': dataTestId,
+      form,
+      className,
+      placeholder,
+    }: FieldsetProps,
+    ref: React.ForwardedRef<HTMLInputElement>
+  ) => {
     const { getInputProps, error } = useField(name, {
       formId: form,
     })
