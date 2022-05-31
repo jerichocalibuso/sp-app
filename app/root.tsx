@@ -20,6 +20,8 @@ import { authenticator } from './services/auth.server'
 
 import nProgressStyles from 'nprogress/nprogress.css'
 import { useNProgress } from './hooks/useNProgress'
+import { Role } from '@prisma/client'
+import { db } from './utils/db.server'
 
 export function links() {
   return [
@@ -37,11 +39,20 @@ export const meta: MetaFunction = () => {
 export const loader: LoaderFunction = async ({ request }) => {
   // If the user is already authenticated redirect to /dashboard directly
   const user = await authenticator.isAuthenticated(request)
+  if (user?.id && user?.role === Role.CUSTOMER) {
+    const currentOrder = await db.order.findFirst({
+      where: {
+        userId: user.id,
+      },
+    })
+    return json({ user, currentOrder })
+  }
+
   return json({ user })
 }
 
 export default function App() {
-  const { user } = useLoaderData()
+  const { user, currentOrder } = useLoaderData()
 
   useNProgress()
 
@@ -55,7 +66,7 @@ export default function App() {
       </head>
       <body>
         <div>
-          <Navbar user={user || null} />
+          <Navbar {...{ user, currentOrder }} />
           <Outlet />
           <Footer />
         </div>

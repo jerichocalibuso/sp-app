@@ -7,10 +7,12 @@ import {
   ShoppingCartIcon,
   XIcon,
 } from '@heroicons/react/outline'
-import { Link } from 'remix'
-import { User } from '@prisma/client'
+import { Link, LoaderFunction } from 'remix'
+import { Order, Role, User } from '@prisma/client'
 import { ArrowRightIcon } from '@heroicons/react/solid'
 import AccountDropdown from './AccountDropdown'
+import { authenticator } from '~/services/auth.server'
+import { db } from '~/utils/db.server'
 
 const navigation = {
   pages: [
@@ -23,11 +25,11 @@ const navigation = {
 
 type NavbarProps = {
   user: User | null
+  currentOrder: Order | null
 }
 
-export default function Example({ user }: NavbarProps) {
+export default function Navbar({ user, currentOrder }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-
   return (
     <>
       <Transition.Root show={mobileMenuOpen} as={Fragment}>
@@ -163,13 +165,6 @@ export default function Example({ user }: NavbarProps) {
                     </button>
 
                     {/* Search */}
-                    <Link
-                      to='#'
-                      className='ml-2 p-2 text-gray-700 hover:text-red-600'
-                    >
-                      <span className='sr-only'>Search</span>
-                      <SearchIcon className='h-6 w-6' aria-hidden='true' />
-                    </Link>
                   </div>
 
                   {/* Logo (lg-) */}
@@ -190,18 +185,20 @@ export default function Example({ user }: NavbarProps) {
                           <span className='sr-only'>Search</span>
                           <SearchIcon className='h-6 w-6' aria-hidden='true' />
                         </Link>
-                        <Link to='/cart' className='group  flex items-center'>
-                          <ShoppingCartIcon
-                            className='h-6 w-6 flex-shrink-0 text-gray-700 group-hover:text-red-600'
-                            aria-hidden='true'
-                          />
-                          <span className='ml-2 text-sm font-medium text-gray-700 group-hover:text-red-600'>
-                            0
-                          </span>
-                          <span className='sr-only'>
-                            items in cart, view bag
-                          </span>
-                        </Link>
+                        {user?.role === Role.CUSTOMER ? (
+                          <Link to='/cart' className='group  flex items-center'>
+                            <ShoppingCartIcon
+                              className='h-6 w-6 flex-shrink-0 text-gray-700 group-hover:text-red-600'
+                              aria-hidden='true'
+                            />
+                            <span className='ml-2 text-sm font-medium text-gray-700 group-hover:text-red-600'>
+                              {currentOrder?.productIds?.length || 0}
+                            </span>
+                            <span className='sr-only'>
+                              items in cart, view bag
+                            </span>
+                          </Link>
+                        ) : null}
                       </div>
 
                       <div className='hidden lg:flex'>

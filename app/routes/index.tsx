@@ -85,7 +85,7 @@ const navigation = {
 const trendingProducts: Product[] = [
   {
     id: 2,
-    imageSrc: '/images/BF-chicken-breast-fillets-860g.jpeg',
+    imageUrl: '/images/BF-chicken-breast-fillets-860g.jpeg',
     imageAlt: 'BF-chicken-breast-fillets-860g',
     name: 'Chicken Breasts Fillets',
     weight: '860g',
@@ -97,7 +97,7 @@ const trendingProducts: Product[] = [
   },
   {
     id: 3,
-    imageSrc: '/images/BF-chicken-breasts-860g.jpeg',
+    imageUrl: '/images/BF-chicken-breasts-860g.jpeg',
     imageAlt: 'BF-chicken-breasts-860g',
     name: 'Chicken Breasts',
     weight: '860g',
@@ -109,7 +109,7 @@ const trendingProducts: Product[] = [
   },
   {
     id: 4,
-    imageSrc: '/images/BF-chicken-leg-quarters-860g.jpeg',
+    imageUrl: '/images/BF-chicken-leg-quarters-860g.jpeg',
     imageAlt: 'BF-chicken-leg-quarters-860g',
     name: 'Chicken Leg Quarters',
     weight: '860g',
@@ -121,7 +121,7 @@ const trendingProducts: Product[] = [
   },
   {
     id: 5,
-    imageSrc: '/images/BF-chicken-nuggets-200g.jpeg',
+    imageUrl: '/images/BF-chicken-nuggets-200g.jpeg',
     imageAlt: 'BF-chicken-nuggets-200g',
     name: 'Chicken Nuggets',
     weight: '200g',
@@ -135,19 +135,19 @@ const trendingProducts: Product[] = [
 const categories = [
   {
     name: 'Chicken',
-    imageSrc: '/images/category-chicken2.jpg',
+    imageUrl: '/images/category-chicken2.jpg',
     imageAlt: 'category-chicken',
     href: '/chicken',
   },
   {
     name: 'Pork',
-    imageSrc: '/images/category-pork2.jpg',
+    imageUrl: '/images/category-pork2.jpg',
     imageAlt: 'category-pork',
     href: '/pork',
   },
   {
     name: 'Beef',
-    imageSrc: '/images/category-beef2.jpg',
+    imageUrl: '/images/category-beef2.jpg',
     imageAlt: 'category-beef',
     href: '/beef',
   },
@@ -251,7 +251,7 @@ export default function IndexPage() {
                       <div className='group relative'>
                         <div className='aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-md bg-gray-200'>
                           <img
-                            src={product.imageSrc}
+                            src={product.imageUrl}
                             alt={product.imageAlt}
                             className='h-full w-full object-cover object-center group-hover:opacity-75'
                           />
@@ -301,7 +301,7 @@ export default function IndexPage() {
                   <div key={category.name} className='group relative'>
                     <div className='sm:aspect-w-2 sm:aspect-h-1 lg:aspect-w-1 lg:aspect-h-1 relative h-80 w-full overflow-hidden rounded-lg bg-white group-hover:opacity-75 sm:h-64'>
                       <img
-                        src={category.imageSrc}
+                        src={category.imageUrl}
                         alt={category.imageAlt}
                         className='h-full w-full object-cover object-center'
                       />

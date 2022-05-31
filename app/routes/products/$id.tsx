@@ -18,12 +18,7 @@
 import { useState } from 'react'
 import { Disclosure, RadioGroup, Tab } from '@headlessui/react'
 import { MinusIcon, StarIcon } from '@heroicons/react/solid'
-import {
-  HeartIcon,
-  MinusSmIcon,
-  PlusIcon,
-  PlusSmIcon,
-} from '@heroicons/react/outline'
+import { MinusSmIcon, PlusIcon, PlusSmIcon } from '@heroicons/react/outline'
 import { useParams } from 'remix'
 import invariant from 'tiny-invariant'
 import { useLocation } from 'react-router'

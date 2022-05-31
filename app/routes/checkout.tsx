@@ -22,7 +22,6 @@ import {
   TrashIcon,
 } from '@heroicons/react/solid'
 import { CashIcon } from '@heroicons/react/outline'
-import { prod } from './cart'
 import { Quantity } from '~/components/Quantity'
 
 const paymentMethods = [
@@ -41,7 +40,7 @@ export default function Example() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(
     paymentMethods[0]
   )
-  const products = prod
+  const products = []
 
   return (
     <div className='bg-gray-50'>
@@ -284,7 +283,7 @@ export default function Example() {
                   <li key={product.id} className='flex py-6 px-4 sm:px-6'>
                     <div className='flex-shrink-0'>
                       <img
-                        src={product.imageSrc}
+                        src={product.imageUrl}
                         alt={product.imageAlt}
                         className='w-40 rounded-md'
                       />
