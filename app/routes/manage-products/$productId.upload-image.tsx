@@ -171,9 +171,8 @@ export default function UploadImageRoute() {
                     htmlFor='file-upload'
                     className='focus-within:outpne-none relative cursor-pointer rounded-md bg-white font-medium text-red-600 focus-within:ring-2 focus-within:ring-red-500 focus-within:ring-offset-2 hover:text-red-500'
                   >
-                    <span>Upload a file</span>
+                    <span>Click to select an image</span>
                   </label>
-                  <p className='pl-1'>or drag and drop</p>
                 </div>
                 <p className='text-xs text-gray-500'>
                   PNG, JPG, JPEG up to 10MB

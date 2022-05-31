@@ -25,7 +25,6 @@ import {
   PlusSmIcon,
 } from '@heroicons/react/outline'
 import { useParams } from 'remix'
-import { products } from '.'
 import invariant from 'tiny-invariant'
 import { useLocation } from 'react-router'
 import { Quantity } from '~/components/Quantity'

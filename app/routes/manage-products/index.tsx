@@ -49,7 +49,6 @@ export const productValidator = withZod(baseSchema)
 
 export const action: ActionFunction = async ({ request }) => {
   const formData = await request.formData()
-
   if (formData.get('_method') === 'delete') {
     const productId = formData.get('productId') as string
     invariant(productId, 'productId is not found.')
@@ -67,22 +66,6 @@ export const action: ActionFunction = async ({ request }) => {
     return redirect('/manage-products')
   }
 
-  const productName = formData.get('name') as string
-
-  const existingProduct = await db.product.findFirst({
-    where: {
-      name: productName,
-    },
-  })
-
-  if (existingProduct) {
-    return validationError({
-      fieldErrors: {
-        name: 'Product name already exists',
-      },
-    })
-  }
-
   const result = await productValidator.validate(formData)
 
   if (result.error) {
@@ -95,6 +78,30 @@ export const action: ActionFunction = async ({ request }) => {
 
   const productId = formData.get('productId') as string
   if (productId) {
+    const product = await db.product.findFirst({
+      where: { id: productId },
+      select: {
+        name: true,
+      },
+    })
+    const productName = formData.get('name') as string
+
+    if (product?.name !== productName) {
+      const existingProduct = await db.product.findFirst({
+        where: {
+          name: productName,
+        },
+      })
+
+      if (existingProduct) {
+        return validationError({
+          fieldErrors: {
+            name: 'Product name already exists',
+          },
+        })
+      }
+    }
+
     try {
       await db.product.update({
         where: { id: productId },
@@ -112,6 +119,22 @@ export const action: ActionFunction = async ({ request }) => {
       throw new Response('Unable to create the product', { status: 500 })
     }
   } else {
+    const productName = formData.get('name') as string
+
+    const existingProduct = await db.product.findFirst({
+      where: {
+        name: productName,
+      },
+    })
+
+    if (existingProduct) {
+      return validationError({
+        fieldErrors: {
+          name: 'Product name already exists',
+        },
+      })
+    }
+
     try {
       await db.product.create({
         data: {

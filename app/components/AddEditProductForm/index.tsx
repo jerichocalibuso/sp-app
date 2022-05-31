@@ -32,13 +32,20 @@ export default function AddEditProductForm({
   return (
     <>
       <ConfirmDeleteModal
-        {...{ confirmingDeletion, setConfirmingDeletion, productId }}
+        {...{
+          confirmingDeletion,
+          setConfirmingDeletion,
+          productId,
+          setOpenSlideOver,
+        }}
       />
       <Transition.Root show={openSlideOver} as={Fragment}>
         <Dialog
           as='div'
           className='fixed inset-0 z-40 overflow-hidden'
-          onClose={setOpenSlideOver}
+          onClose={() => {
+            if (!confirmingDeletion) setOpenSlideOver(false)
+          }}
         >
           <div className='absolute inset-0 overflow-hidden'>
             <Dialog.Overlay className='absolute inset-0' />
@@ -110,7 +117,7 @@ export default function AddEditProductForm({
                             <CategorySelect
                               name='category'
                               label='Category'
-                              value={selectedProduct?.category || ''}
+                              value={'PORK'}
                               className={`${
                                 loaderData?.error?.message && 'border-red-500'
                               }`}
@@ -120,7 +127,7 @@ export default function AddEditProductForm({
                               name='price'
                               label='Price'
                               type='text'
-                              value={selectedProduct?.price?.toString() || '0'}
+                              value={selectedProduct?.price?.toString() || ''}
                               className={`${
                                 loaderData?.error?.message && 'border-red-500'
                               }`}
@@ -129,7 +136,7 @@ export default function AddEditProductForm({
                               name='stock'
                               label='Stock'
                               type='text'
-                              value={selectedProduct?.stock?.toString() || '0'}
+                              value={selectedProduct?.stock?.toString() || ''}
                               className={`${
                                 loaderData?.error?.message && 'border-red-500'
                               }`}
@@ -138,7 +145,7 @@ export default function AddEditProductForm({
                               name='weight'
                               label='Weight per Qty'
                               type='text'
-                              value={selectedProduct?.weight?.toString() || '0'}
+                              value={selectedProduct?.weight?.toString() || ''}
                               className={`${
                                 loaderData?.error?.message && 'border-red-500'
                               }`}
@@ -147,7 +154,10 @@ export default function AddEditProductForm({
                             <Fieldset
                               name='description'
                               label='Description'
-                              value={selectedProduct?.description || ''}
+                              value={
+                                selectedProduct?.description ||
+                                'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Alias cumque nihil atque quae inventore. Aliquam cupiditate repudiandae suscipit corporis natus.'
+                              }
                               className={`${
                                 loaderData?.error?.message && 'border-red-500'
                               }`}
@@ -157,7 +167,7 @@ export default function AddEditProductForm({
                               name='brand'
                               label='Brand'
                               type='text'
-                              value={selectedProduct?.brand || ''}
+                              value={selectedProduct?.brand || 'Camille'}
                               className={`${
                                 loaderData?.error?.message && 'border-red-500'
                               }`}
@@ -173,6 +183,12 @@ export default function AddEditProductForm({
 
                             {selectedProduct?.imageUrl ? (
                               <>
+                                <Link
+                                  to={`/manage-products/${selectedProduct.id}/upload-image`}
+                                  className='inline-flex justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:cursor-pointer hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:w-auto'
+                                >
+                                  Upload new image
+                                </Link>
                                 <div key={selectedProduct?.name}>
                                   <img
                                     src={selectedProduct?.imageUrl}
@@ -180,12 +196,6 @@ export default function AddEditProductForm({
                                     className='my-2 h-full w-full object-cover object-center sm:rounded-lg'
                                   />
                                 </div>
-                                <Link
-                                  to={`/manage-products/${selectedProduct.id}/upload-image`}
-                                  className='inline-flex justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:cursor-pointer hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:w-auto'
-                                >
-                                  Upload new image
-                                </Link>
                               </>
                             ) : (
                               <>
@@ -205,6 +215,7 @@ export default function AddEditProductForm({
                     <div className='flex flex-shrink-0 content-center justify-between px-4 py-4'>
                       {selectedProduct ? (
                         <button
+                          type='button'
                           onClick={() => setConfirmingDeletion(true)}
                           className='rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
                         >

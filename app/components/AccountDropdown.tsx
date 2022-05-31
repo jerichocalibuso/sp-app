@@ -32,7 +32,7 @@ const adminMenuItems: MenuItem[] = [
 const getMenuItems = (role: Role) => {
   if (role === Role.ADMIN) {
     return adminMenuItems.map((item) => (
-      <Menu.Item>
+      <Menu.Item key={item.route}>
         {({ active }) => (
           <Link
             to={item.route}

@@ -35,7 +35,9 @@ export default function ManageUsersForm({
         <Dialog
           as='div'
           className='fixed inset-0 z-40 overflow-hidden'
-          onClose={setOpenSlideOver}
+          onClose={() => {
+            if (!confirmingDeletion) setOpenSlideOver(false)
+          }}
         >
           <div className='absolute inset-0 overflow-hidden'>
             <Dialog.Overlay className='absolute inset-0' />
@@ -150,6 +152,7 @@ export default function ManageUsersForm({
                     </div>
                     <div className='flex flex-shrink-0 content-center justify-between px-4 py-4'>
                       <button
+                        type='button'
                         onClick={() => setConfirmingDeletion(true)}
                         className='rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2'
                       >

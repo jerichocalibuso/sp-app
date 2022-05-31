@@ -8,18 +8,23 @@ interface Props {
   productId: string
   confirmingDeletion: boolean
   setConfirmingDeletion: React.Dispatch<React.SetStateAction<boolean>>
+  setOpenSlideOver: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 export default function ConfirmDeleteModal({
   productId,
   confirmingDeletion,
   setConfirmingDeletion,
+  setOpenSlideOver,
 }: Props) {
   const cancelButtonRef = useRef(null)
   const fetcher = useFetcher()
 
   useEffect(() => {
-    if (fetcher.type === 'done') setConfirmingDeletion(false)
+    if (fetcher.type === 'done') {
+      setConfirmingDeletion(false)
+      setOpenSlideOver(false)
+    }
   }, [fetcher])
 
   return (
