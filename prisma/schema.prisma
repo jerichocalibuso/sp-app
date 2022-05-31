@@ -45,6 +45,7 @@ model Address {
   barangay    String?
   city        String?
   province    String?
+  nickname    String
 
 }
 

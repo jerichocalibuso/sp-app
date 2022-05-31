@@ -1,28 +1,39 @@
-/*
-  This example requires Tailwind CSS v2.0+ 
-  
-  This example requires some changes to your config:
-  
-  ```
-  // tailwind.config.js
-  module.exports = {
-    // ...
-    plugins: [
-      // ...
-      require('@tailwindcss/forms'),
-    ],
-  }
-  ```
-*/
-import { useState } from 'react'
-import { RadioGroup } from '@headlessui/react'
+import { Fragment, useState } from 'react'
+import { Listbox, RadioGroup, Transition } from '@headlessui/react'
 import {
   CheckCircleIcon,
+  CheckIcon,
   CreditCardIcon,
+  SelectorIcon,
   TrashIcon,
 } from '@heroicons/react/solid'
 import { CashIcon } from '@heroicons/react/outline'
-import { Quantity } from '~/components/Quantity'
+import {
+  ActionFunction,
+  Form,
+  LoaderFunction,
+  redirect,
+  useLoaderData,
+} from 'remix'
+import { authenticator } from '~/services/auth.server'
+import { Role, Status } from '@prisma/client'
+import { db } from '~/utils/db.server'
+import { Product } from './products'
+import { z } from 'zod'
+import { zfd } from 'zod-form-data'
+import { withZod } from '@remix-validated-form/with-zod'
+import { ValidatedForm, validationError } from 'remix-validated-form'
+import { Input } from '~/components/Input'
+
+const baseSchema = z.object({
+  firstName: zfd.text(z.string().nonempty()),
+  lastName: zfd.text(z.string().nonempty()),
+  phoneNumber: zfd.text(z.string().nonempty()),
+  address: zfd.text(z.string().nonempty()),
+  city: zfd.text(z.string().nonempty()),
+})
+
+export const addressValidator = withZod(baseSchema)
 
 const paymentMethods = [
   { id: 'gcash', title: 'GCash', imageSrc: '/images/gcash-logo.png' },
@@ -36,44 +47,210 @@ function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
 }
 
+export const action: ActionFunction = async ({ request }) => {
+  const user = await authenticator.isAuthenticated(request)
+  if (user?.role !== Role.CUSTOMER) {
+    return redirect('/unauthorized')
+  }
+  console.log('hello')
+
+  if (!user?.role) {
+    return redirect('/signin')
+  }
+
+  const formData = await request.formData()
+  const paymentMethod = formData.get('paymentMethod[id]')
+  console.log(`paymentMethod: ${paymentMethod}`)
+
+  return null
+}
+
+export const loader: LoaderFunction = async ({ request }) => {
+  const user = await authenticator.isAuthenticated(request)
+
+  if (!user?.role) {
+    return redirect('/signin')
+  }
+
+  if (user?.role !== Role.CUSTOMER) {
+    return redirect('/unauthorized')
+  }
+
+  const currentOrder = await db.order.findFirst({
+    where: {
+      userId: user?.id,
+    },
+  })
+
+  if (!currentOrder) redirect('/')
+
+  const products = await db.product.findMany({
+    where: {
+      id: {
+        in: currentOrder?.productIds || [],
+      },
+    },
+  })
+
+  return { products, currentOrder }
+}
+
 export default function Example() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(
     paymentMethods[0]
   )
-  const products = []
+
+  const { currentOrder, products } = useLoaderData()
+
+  const [selected, setSelected] = useState(products[0])
+  const [newAddress, setNewAddress] = useState(false)
+
+  const loaderData = useLoaderData()
 
   return (
     <div className='bg-gray-50'>
-      <div className='mx-auto max-w-2xl px-4 pt-24 pb-24 sm:px-6 lg:max-w-7xl lg:px-8'>
+      <ValidatedForm
+        validator={addressValidator}
+        method='post'
+        className='mx-auto max-w-2xl px-4 pt-24 pb-24 sm:px-6 lg:max-w-7xl lg:px-8'
+      >
         <h1 className='mb-6 text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl'>
           Checkout
         </h1>
         <h2 className='sr-only'>Checkout</h2>
 
-        <form className='lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16'>
+        <div className='lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16'>
           <div>
             <div>
+              <div className=' lg:max-w-[36rem] '>
+                <Listbox
+                  disabled={newAddress}
+                  value={selected}
+                  onChange={setSelected}
+                >
+                  {({ open }) => (
+                    <>
+                      <Listbox.Label className='block text-xl font-medium text-gray-900'>
+                        Saved addresses
+                      </Listbox.Label>
+                      <div className='relative mt-2 mb-4'>
+                        <Listbox.Button className=' relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 disabled:cursor-not-allowed disabled:text-gray-400 sm:text-sm'>
+                          <span className='block truncate py-1'>
+                            {newAddress
+                              ? 'Saving the following information as a new address...'
+                              : selected?.name}
+                          </span>
+                          <span className='pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2'>
+                            <SelectorIcon
+                              className='h-5 w-5 text-gray-400'
+                              aria-hidden='true'
+                            />
+                          </span>
+                        </Listbox.Button>
+
+                        <Transition
+                          show={open}
+                          as={Fragment}
+                          leave='transition ease-in duration-100'
+                          leaveFrom='opacity-100'
+                          leaveTo='opacity-0'
+                        >
+                          <Listbox.Options className='absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm'>
+                            {products.map((product: Product) => (
+                              <Listbox.Option
+                                key={product.id}
+                                className={({ active }) =>
+                                  classNames(
+                                    active
+                                      ? 'bg-red-500 text-white'
+                                      : 'text-gray-900',
+                                    'relative cursor-default select-none py-2 pl-3 pr-9'
+                                  )
+                                }
+                                value={product}
+                              >
+                                {({ selected, active }) => (
+                                  <>
+                                    <span
+                                      className={classNames(
+                                        selected
+                                          ? 'font-semibold'
+                                          : 'font-normal',
+                                        'block truncate'
+                                      )}
+                                    >
+                                      {product.name}
+                                    </span>
+
+                                    {selected ? (
+                                      <span
+                                        className={classNames(
+                                          active
+                                            ? 'text-white'
+                                            : 'text-red-600',
+                                          'absolute inset-y-0 right-0 flex items-center pr-4'
+                                        )}
+                                      >
+                                        <CheckIcon
+                                          className='h-5 w-5'
+                                          aria-hidden='true'
+                                        />
+                                      </span>
+                                    ) : null}
+                                  </>
+                                )}
+                              </Listbox.Option>
+                            ))}
+                          </Listbox.Options>
+                        </Transition>
+                      </div>
+                    </>
+                  )}
+                </Listbox>
+                <div className='my-4 flex items-center'>
+                  <input
+                    checked={newAddress}
+                    onChange={() => setNewAddress(!newAddress)}
+                    type='checkbox'
+                    name='newAddress'
+                    id='new-address'
+                    className='h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500'
+                  />
+                  <label
+                    htmlFor='new-address'
+                    className='ml-2 text-sm text-gray-900'
+                  >
+                    Save the following address as a new address
+                  </label>
+                </div>
+                {newAddress ? (
+                  <div className='my-4'>
+                    <Input
+                      name='addressNickname'
+                      label='Address nickname'
+                      type='text'
+                      value={''}
+                      className={`${
+                        loaderData?.error?.message && 'border-red-500'
+                      }`}
+                    />
+                  </div>
+                ) : null}
+              </div>
               <h2 className='text-xl font-medium text-gray-900'>
                 Contact information
               </h2>
 
               <div className='mt-4'>
-                <label
-                  htmlFor='phone-number'
-                  className='block text-sm font-medium text-gray-700'
-                >
-                  Phone number
-                </label>
-                <div className='mt-1'>
-                  <input
-                    type='tel'
-                    id='phone-number'
-                    name='phone-number'
-                    autoComplete='tel'
-                    // classNamp-3 e='focus:shadow-outline w-full appearance-none rounded border py-2 px-3 leading-tight text-gray-700 shadow focus:outline-none'
-                    className='block w-full rounded-md border-gray-300 py-3 px-3 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'
-                  />
-                </div>
+                <Input
+                  name='phoneNumber'
+                  label='Phone number'
+                  type='text'
+                  value={''}
+                  className={`${
+                    loaderData?.error?.message && 'border-red-500'
+                  }`}
+                />
               </div>
             </div>
 
@@ -84,83 +261,51 @@ export default function Example() {
 
               <div className='mt-4 grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4'>
                 <div>
-                  <label
-                    htmlFor='first-name'
-                    className='block text-sm font-medium text-gray-700'
-                  >
-                    First name
-                  </label>
-                  <div className='mt-1'>
-                    <input
-                      type='text'
-                      id='first-name'
-                      name='first-name'
-                      autoComplete='given-name'
-                      className='block w-full rounded-md border-gray-300 p-3 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'
-                    />
-                  </div>
+                  <Input
+                    name='firstName'
+                    label='First name'
+                    type='text'
+                    value={''}
+                    className={`${
+                      loaderData?.error?.message && 'border-red-500'
+                    }`}
+                  />
                 </div>
 
                 <div>
-                  <label
-                    htmlFor='last-name'
-                    className='block text-sm font-medium text-gray-700'
-                  >
-                    Last name
-                  </label>
-                  <div className='mt-1'>
-                    <input
-                      type='text'
-                      id='last-name'
-                      name='last-name'
-                      autoComplete='family-name'
-                      className='block w-full rounded-md border-gray-300 p-3 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'
-                    />
-                  </div>
+                  <Input
+                    name='lastName'
+                    label='Last name'
+                    type='text'
+                    value={''}
+                    className={`${
+                      loaderData?.error?.message && 'border-red-500'
+                    }`}
+                  />
                 </div>
 
                 <div className='sm:col-span-2'>
-                  <label
-                    htmlFor='address'
-                    className='block text-sm font-medium text-gray-700'
-                  >
-                    Address
-                  </label>
-                  <div className='mt-1'>
-                    <input
-                      type='text'
-                      name='address'
-                      id='address'
-                      autoComplete='street-address'
-                      className='block w-full rounded-md border-gray-300 p-3 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'
-                    />
-                  </div>
+                  <Input
+                    name='address'
+                    label='Address'
+                    type='text'
+                    value={''}
+                    className={`${
+                      loaderData?.error?.message && 'border-red-500'
+                    }`}
+                  />
                 </div>
 
                 <div>
-                  <label
-                    htmlFor='city'
-                    className='block text-sm font-medium text-gray-700'
-                  >
-                    City / Municipality
-                  </label>
-                  <div className='relative mt-1'>
-                    <select
-                      name='city'
-                      id='city'
-                      autoComplete='address-level2'
-                      className='leading block w-full appearance-none rounded-md border-gray-300 p-3 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'
-                    />
-                    <div className='pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700'>
-                      <svg
-                        className='h-4 w-4 fill-current'
-                        xmlns='http://www.w3.org/2000/svg'
-                        viewBox='0 0 20 20'
-                      >
-                        <path d='M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z' />
-                      </svg>
-                    </div>
-                  </div>
+                  <Input
+                    name='city'
+                    label='City / Municipality'
+                    type='text'
+                    value={''}
+                    className={`${
+                      loaderData?.error?.message && 'border-red-500'
+                    }`}
+                  />
                 </div>
 
                 <div>
@@ -178,7 +323,7 @@ export default function Example() {
                       value='Cavite'
                       disabled
                       autoComplete='address-level1'
-                      className='block w-full rounded-md border-gray-300 p-3 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:border disabled:text-gray-500  sm:text-sm'
+                      className='block w-full rounded-md border-gray-300 p-3 shadow-sm focus:border-red-500 focus:ring-red-500 disabled:border disabled:text-gray-500  sm:text-sm'
                     />
                   </div>
                 </div>
@@ -187,6 +332,7 @@ export default function Example() {
 
             <div className='mt-5 border-t border-gray-200 pt-5'>
               <RadioGroup
+                name='paymentMethod'
                 value={selectedPaymentMethod}
                 onChange={setSelectedPaymentMethod}
               >
@@ -209,8 +355,8 @@ export default function Example() {
                     >
                       {({ checked, active }) => (
                         <>
-                          <div className='flex flex-1'>
-                            <div className='flex items-center'>
+                          <div className='flex-4 flex max-h-8 items-center justify-between'>
+                            <div className='flex items-center '>
                               {paymentMethod.id === 'card' && (
                                 <CreditCardIcon className=' mr-2 w-10 text-green-500' />
                               )}
@@ -244,13 +390,16 @@ export default function Example() {
                                 {paymentMethod.price}
                               </RadioGroup.Description> */}
                             </div>
+                            {checked ? (
+                              <div>
+                                <CheckCircleIcon
+                                  className=' ml-3 h-5 w-5 text-green-500'
+                                  aria-hidden='true'
+                                />
+                              </div>
+                            ) : null}
                           </div>
-                          {checked ? (
-                            <CheckCircleIcon
-                              className='h-5 w-5 text-green-500'
-                              aria-hidden='true'
-                            />
-                          ) : null}
+
                           <div
                             className={classNames(
                               active ? 'border' : 'border-2',
@@ -279,69 +428,97 @@ export default function Example() {
             <div className='mt-6 rounded-lg border border-gray-200 bg-white shadow-sm'>
               <h3 className='sr-only'>Items in your cart</h3>
               <ul role='list' className='divide-y divide-gray-200'>
-                {products.map((product) => (
-                  <li key={product.id} className='flex py-6 px-4 sm:px-6'>
-                    <div className='flex-shrink-0'>
-                      <img
-                        src={product.imageUrl}
-                        alt={product.imageAlt}
-                        className='w-40 rounded-md'
-                      />
-                    </div>
-
-                    <div className='ml-6 flex flex-1 flex-col pt-4'>
-                      <div className='flex'>
-                        <div className='min-w-0 flex-1'>
-                          <h4 className='text-lg'>
-                            <a
-                              href={`/products/${product.id}`}
-                              className='font-medium text-gray-700 hover:text-red-800'
-                            >
-                              {product.name}
-                            </a>
-                          </h4>
-                          <p className='text-md mt-1 text-red-500'>
-                            ₱{product.price}
-                          </p>
-                          <div className='mt-2 '>
-                            <Quantity />
-                          </div>
-                        </div>
-
-                        <div className='ml-4 flow-root flex-shrink-0'>
-                          <button
-                            type='button'
-                            className='-m-2.5 flex items-center justify-center bg-white p-2.5 text-gray-400 hover:text-red-500'
-                          >
-                            <span className='sr-only'>Remove</span>
-                            <TrashIcon className='h-5 w-5' aria-hidden='true' />
-                          </button>
-                        </div>
+                {products.map((product: Product) => {
+                  const quantity = currentOrder?.productIds.filter(
+                    (id: string) => {
+                      return product.id?.toString() === id
+                    }
+                  )?.length
+                  return (
+                    <li key={product.id} className='flex py-6 px-4 sm:px-6'>
+                      <div className='flex-shrink-0'>
+                        <img
+                          src={product.imageUrl}
+                          alt={product.imageAlt}
+                          className='w-40 rounded-md'
+                        />
                       </div>
 
-                      <div className='flex flex-1 items-end justify-between pt-2'></div>
-                    </div>
-                  </li>
-                ))}
+                      <div className='ml-6 flex flex-1 flex-col pt-4'>
+                        <div className='flex'>
+                          <div className='min-w-0 flex-1'>
+                            <h4 className='text-lg'>
+                              <a
+                                href={`/products/${product.id}`}
+                                className='font-medium text-gray-700 hover:text-red-800'
+                              >
+                                {product.name}
+                              </a>
+                            </h4>
+                            <p className='text-md mt-1 text-red-500'>
+                              ₱{product.price}
+                            </p>
+                            <div className='mt-2 '>
+                              <p>Quantity: {quantity}</p>
+                            </div>
+                          </div>
+
+                          {/* <div className='ml-4 flow-root flex-shrink-0'>
+                            <button
+                              type='button'
+                              className='-m-2.5 flex items-center justify-center bg-white p-2.5 text-gray-400 hover:text-red-500'
+                            >
+                              <span className='sr-only'>Remove</span>
+                              <TrashIcon
+                                className='h-5 w-5'
+                                aria-hidden='true'
+                              />
+                            </button>
+                          </div> */}
+                        </div>
+
+                        <div className='flex flex-1 items-end justify-between pt-2'></div>
+                      </div>
+                    </li>
+                  )
+                })}
               </ul>
               <dl className='space-y-6 border-t border-gray-200 py-6 px-4 sm:px-6'>
                 <div className='flex items-center justify-between'>
                   <dt className='text-sm'>Subtotal</dt>
-                  <dd className='text-sm font-medium text-gray-900'>₱1000</dd>
+                  <dd className='text-sm font-medium text-gray-900'>
+                    ₱{currentOrder?.amount ? currentOrder?.amount : 0}
+                  </dd>
                 </div>
                 <div className='flex items-center justify-between'>
                   <dt className='text-sm'>Delivery fee</dt>
-                  <dd className='text-sm font-medium text-gray-900  line-through'>
-                    ₱50
+                  <dd className='text-right text-sm font-medium text-gray-900'>
+                    {currentOrder?.amount ? (
+                      <>
+                        <p className='line-through'>₱50</p>
+                      </>
+                    ) : (
+                      <>
+                        <p>₱0</p>
+                      </>
+                    )}
+                    {currentOrder?.amount && (
+                      <div className='mt-2 flex justify-end space-x-2'>
+                        <p className='text-right text-sm font-medium text-gray-900'>
+                          Free delivery promo applied
+                        </p>
+                        <CheckCircleIcon className='w-5 text-green-500' />
+                      </div>
+                    )}
                   </dd>
                 </div>
-                <p className='text-right text-sm font-medium text-gray-900'>
-                  Free delivery promo applied
-                </p>
 
                 <div className='flex items-center justify-between border-t border-gray-200 pt-6'>
                   <dt className='text-base font-medium'>Total amount</dt>
-                  <dd className='text-base font-medium text-red-500'>₱1000</dd>
+                  <dd className='text-base font-medium text-red-500'>
+                    {' '}
+                    ₱{currentOrder?.amount ? currentOrder?.amount : 0}
+                  </dd>
                 </div>
               </dl>
 
@@ -355,8 +532,8 @@ export default function Example() {
               </div>
             </div>
           </div>
-        </form>
-      </div>
+        </div>
+      </ValidatedForm>
     </div>
   )
 }

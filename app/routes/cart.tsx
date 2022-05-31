@@ -14,15 +14,8 @@
   }
   ```
 */
-import {
-  CheckCircleIcon,
-  CheckIcon,
-  ClockIcon,
-  QuestionMarkCircleIcon,
-  TrashIcon,
-  XIcon,
-} from '@heroicons/react/solid'
-import { Order, Role, Status } from '@prisma/client'
+import { CheckCircleIcon, QuestionMarkCircleIcon } from '@heroicons/react/solid'
+import { Role, Status } from '@prisma/client'
 import {
   ActionFunction,
   Link,

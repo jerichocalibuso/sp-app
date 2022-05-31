@@ -15,8 +15,8 @@
     "start": "HOST=0.0.0.0 remix-serve api/_build"
   },
   "dependencies": {
-    "@headlessui/react": "^1.4.3",
-    "@heroicons/react": "^1.0.5",
+    "@headlessui/react": "^1.6.4",
+    "@heroicons/react": "^1.0.6",
     "@prisma/client": "^3.10.0",
     "@remix-run/react": "^1.2.2",
     "@remix-run/vercel": "^1.2.2",
