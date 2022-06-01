@@ -100,6 +100,7 @@ export const action: ActionFunction = async ({ request }) => {
     const currentOrder = await db.order.findFirst({
       where: {
         userId: user?.id,
+        status: 'IN_CART',
       },
     })
 

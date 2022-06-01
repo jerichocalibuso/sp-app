@@ -35,18 +35,17 @@ model User {
 }
 
 model Address {
-  id          String   @id @default(uuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  User        User?    @relation(fields: [userId], references: [id])
-  userId      String?
-  houseNumber String?
-  streetName  String?
-  barangay    String?
-  city        String?
-  province    String?
-  nickname    String
-
+  id            String   @id @default(uuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  User          User?    @relation(fields: [userId], references: [id])
+  userId        String?
+  phoneNumber   String?
+  address       String?
+  city          String?
+  province      String?
+  nickname      String
+  contactPerson String?
 }
 
 enum Status {

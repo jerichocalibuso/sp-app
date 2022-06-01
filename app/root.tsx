@@ -43,6 +43,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     const currentOrder = await db.order.findFirst({
       where: {
         userId: user.id,
+        status: 'IN_CART',
       },
     })
     return json({ user, currentOrder })

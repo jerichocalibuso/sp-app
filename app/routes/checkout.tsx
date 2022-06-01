@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { Listbox, RadioGroup, Transition } from '@headlessui/react'
 import {
   CheckCircleIcon,
@@ -16,7 +16,7 @@ import {
   useLoaderData,
 } from 'remix'
 import { authenticator } from '~/services/auth.server'
-import { Role, Status } from '@prisma/client'
+import { Address, Role, Status } from '@prisma/client'
 import { db } from '~/utils/db.server'
 import { Product } from './products'
 import { z } from 'zod'
@@ -26,8 +26,7 @@ import { ValidatedForm, validationError } from 'remix-validated-form'
 import { Input } from '~/components/Input'
 
 const baseSchema = z.object({
-  firstName: zfd.text(z.string().nonempty()),
-  lastName: zfd.text(z.string().nonempty()),
+  contactPerson: zfd.text(z.string().nonempty()),
   phoneNumber: zfd.text(z.string().nonempty()),
   address: zfd.text(z.string().nonempty()),
   city: zfd.text(z.string().nonempty()),
@@ -36,12 +35,20 @@ const baseSchema = z.object({
 export const addressValidator = withZod(baseSchema)
 
 const paymentMethods = [
-  { id: 'gcash', title: 'GCash', imageSrc: '/images/gcash-logo.png' },
   { id: 'card', title: 'Credit or debit card' },
+  { id: 'cod', title: 'Cash on delivery' },
+  { id: 'gcash', title: 'GCash', imageSrc: '/images/gcash-logo.png' },
   { id: 'grabpay', title: 'GrabPay', imageSrc: '/images/grabpay-logo.png' },
   { id: 'paymaya', title: 'PayMaya', imageSrc: '/images/paymaya-logo.png' },
-  { id: 'cod', title: 'Cash on delivery' },
 ]
+
+enum PaymentMethod {
+  CARD = 'card',
+  COD = 'cod',
+  GCASH = 'gcash',
+  GRABPAY = 'grabpay',
+  PAYMAYA = 'paymaya',
+}
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
@@ -49,18 +56,64 @@ function classNames(...classes: string[]) {
 
 export const action: ActionFunction = async ({ request }) => {
   const user = await authenticator.isAuthenticated(request)
+
   if (user?.role !== Role.CUSTOMER) {
     return redirect('/unauthorized')
   }
-  console.log('hello')
 
-  if (!user?.role) {
+  if (!user?.id) {
     return redirect('/signin')
   }
 
   const formData = await request.formData()
-  const paymentMethod = formData.get('paymentMethod[id]')
-  console.log(`paymentMethod: ${paymentMethod}`)
+  const newAddress = formData.get('newAddress')
+  const orderId = formData.get('orderId')?.toString() || ''
+  const paymentMethod = formData.get('paymentMethod[id]')?.toString() || ''
+
+  let orderAddress: Address | null = null
+  if (newAddress) {
+    const nickname = formData.get('addressNickname')?.toString() || 'Home'
+    const phoneNumber = formData.get('phoneNumber')?.toString() || ''
+    const city = formData.get('city')?.toString() || ''
+    const address = formData.get('address')?.toString() || ''
+    const contactPerson = formData.get('contactPerson')?.toString() || ''
+
+    orderAddress = await db.address.create({
+      data: {
+        nickname,
+        phoneNumber,
+        city,
+        address,
+        contactPerson,
+        userId: user.id,
+      },
+    })
+  } else {
+    const addressId = formData.get('selectedAddressId')?.toString()
+    if (addressId) {
+      orderAddress = await db.address.findFirst({
+        where: {
+          id: addressId,
+        },
+      })
+    }
+  }
+
+  if (paymentMethod === PaymentMethod.CARD) {
+  } else {
+    //COD
+    console.log('hello')
+    await db.order.update({
+      where: {
+        id: orderId,
+      },
+      data: {
+        status: Status.PACKAGING,
+        paymentOption: 'COD',
+      },
+    })
+    return redirect(`order-success/${orderId}`)
+  }
 
   return null
 }
@@ -79,6 +132,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   const currentOrder = await db.order.findFirst({
     where: {
       userId: user?.id,
+      status: 'IN_CART',
     },
   })
 
@@ -92,7 +146,13 @@ export const loader: LoaderFunction = async ({ request }) => {
     },
   })
 
-  return { products, currentOrder }
+  const savedAddresses = await db.address.findMany({
+    where: {
+      userId: user.id,
+    },
+  })
+
+  return { products, currentOrder, savedAddresses }
 }
 
 export default function Example() {
@@ -100,10 +160,12 @@ export default function Example() {
     paymentMethods[0]
   )
 
-  const { currentOrder, products } = useLoaderData()
+  const { currentOrder, products, savedAddresses } = useLoaderData()
 
-  const [selected, setSelected] = useState(products[0])
-  const [newAddress, setNewAddress] = useState(false)
+  const [selected, setSelected] = useState<Address | null>(
+    savedAddresses[0] || null
+  )
+  const [newAddress, setNewAddress] = useState(!savedAddresses?.length)
 
   const loaderData = useLoaderData()
 
@@ -114,6 +176,13 @@ export default function Example() {
         method='post'
         className='mx-auto max-w-2xl px-4 pt-24 pb-24 sm:px-6 lg:max-w-7xl lg:px-8'
       >
+        <input
+          type='hidden'
+          value={newAddress ? 'true' : ''}
+          name='newAddress'
+        />
+
+        <input type='hidden' value={currentOrder?.id || ''} name='orderId' />
         <h1 className='mb-6 text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl'>
           Checkout
         </h1>
@@ -122,135 +191,158 @@ export default function Example() {
         <div className='lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16'>
           <div>
             <div>
-              <div className=' lg:max-w-[36rem] '>
-                <Listbox
-                  disabled={newAddress}
-                  value={selected}
-                  onChange={setSelected}
-                >
-                  {({ open }) => (
-                    <>
-                      <Listbox.Label className='block text-xl font-medium text-gray-900'>
-                        Saved addresses
-                      </Listbox.Label>
-                      <div className='relative mt-2 mb-4'>
-                        <Listbox.Button className=' relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 disabled:cursor-not-allowed disabled:text-gray-400 sm:text-sm'>
-                          <span className='block truncate py-1'>
-                            {newAddress
-                              ? 'Saving the following information as a new address...'
-                              : selected?.name}
-                          </span>
-                          <span className='pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2'>
-                            <SelectorIcon
-                              className='h-5 w-5 text-gray-400'
-                              aria-hidden='true'
-                            />
-                          </span>
-                        </Listbox.Button>
-
-                        <Transition
-                          show={open}
-                          as={Fragment}
-                          leave='transition ease-in duration-100'
-                          leaveFrom='opacity-100'
-                          leaveTo='opacity-0'
-                        >
-                          <Listbox.Options className='absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm'>
-                            {products.map((product: Product) => (
-                              <Listbox.Option
-                                key={product.id}
-                                className={({ active }) =>
-                                  classNames(
-                                    active
-                                      ? 'bg-red-500 text-white'
-                                      : 'text-gray-900',
-                                    'relative cursor-default select-none py-2 pl-3 pr-9'
-                                  )
-                                }
-                                value={product}
-                              >
-                                {({ selected, active }) => (
-                                  <>
-                                    <span
-                                      className={classNames(
-                                        selected
-                                          ? 'font-semibold'
-                                          : 'font-normal',
-                                        'block truncate'
-                                      )}
-                                    >
-                                      {product.name}
-                                    </span>
-
-                                    {selected ? (
-                                      <span
-                                        className={classNames(
-                                          active
-                                            ? 'text-white'
-                                            : 'text-red-600',
-                                          'absolute inset-y-0 right-0 flex items-center pr-4'
-                                        )}
-                                      >
-                                        <CheckIcon
-                                          className='h-5 w-5'
-                                          aria-hidden='true'
-                                        />
-                                      </span>
-                                    ) : null}
-                                  </>
-                                )}
-                              </Listbox.Option>
-                            ))}
-                          </Listbox.Options>
-                        </Transition>
-                      </div>
-                    </>
-                  )}
-                </Listbox>
-                <div className='my-4 flex items-center'>
+              {savedAddresses?.length ? (
+                <div className=' lg:max-w-[36rem] '>
                   <input
-                    checked={newAddress}
-                    onChange={() => setNewAddress(!newAddress)}
-                    type='checkbox'
-                    name='newAddress'
-                    id='new-address'
-                    className='h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500'
+                    type='hidden'
+                    value={selected?.id || ''}
+                    name='selectedAddressId'
                   />
-                  <label
-                    htmlFor='new-address'
-                    className='ml-2 text-sm text-gray-900'
+                  <Listbox
+                    disabled={newAddress}
+                    value={selected}
+                    onChange={setSelected}
                   >
-                    Save the following address as a new address
-                  </label>
+                    {({ open }) => (
+                      <>
+                        <Listbox.Label className='block text-xl font-medium text-gray-900'>
+                          Saved addresses
+                        </Listbox.Label>
+                        <div className='relative mt-4 mb-4'>
+                          <Listbox.Button className=' relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 disabled:cursor-not-allowed disabled:text-gray-400 sm:text-sm'>
+                            <span className='block truncate py-1'>
+                              {newAddress && savedAddresses?.length > 0
+                                ? 'Saving the following information as a new address...'
+                                : selected?.nickname || 'Select an address'}
+                            </span>
+                            <span className='pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2'>
+                              <SelectorIcon
+                                className='h-5 w-5 text-gray-400'
+                                aria-hidden='true'
+                              />
+                            </span>
+                          </Listbox.Button>
+
+                          <Transition
+                            show={open}
+                            as={Fragment}
+                            leave='transition ease-in duration-100'
+                            leaveFrom='opacity-100'
+                            leaveTo='opacity-0'
+                          >
+                            <Listbox.Options className='absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm'>
+                              {savedAddresses?.length > 0 &&
+                                savedAddresses.map((address: Address) => (
+                                  <Listbox.Option
+                                    key={address.id}
+                                    className={({ active }) =>
+                                      classNames(
+                                        active
+                                          ? 'bg-red-500 text-white'
+                                          : 'text-gray-900',
+                                        'relative cursor-default select-none py-2 pl-3 pr-9'
+                                      )
+                                    }
+                                    value={address}
+                                  >
+                                    {({ selected, active }) => (
+                                      <>
+                                        <span
+                                          className={classNames(
+                                            selected
+                                              ? 'font-semibold'
+                                              : 'font-normal',
+                                            'block truncate'
+                                          )}
+                                        >
+                                          {address.nickname}
+                                        </span>
+
+                                        {selected ? (
+                                          <span
+                                            className={classNames(
+                                              active
+                                                ? 'text-white'
+                                                : 'text-red-600',
+                                              'absolute inset-y-0 right-0 flex items-center pr-4'
+                                            )}
+                                          >
+                                            <CheckIcon
+                                              className='h-5 w-5'
+                                              aria-hidden='true'
+                                            />
+                                          </span>
+                                        ) : null}
+                                      </>
+                                    )}
+                                  </Listbox.Option>
+                                ))}
+                            </Listbox.Options>
+                          </Transition>
+                        </div>
+                      </>
+                    )}
+                  </Listbox>
+                  <div className='my-4 flex items-center'>
+                    <input
+                      checked={newAddress}
+                      onChange={() => setNewAddress(!newAddress)}
+                      type='checkbox'
+                      name='newAddress'
+                      id='new-address'
+                      className='h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500'
+                    />
+                    <label
+                      htmlFor='new-address'
+                      className='ml-2 text-sm text-gray-900'
+                    >
+                      Save the following address as a new address
+                    </label>
+                  </div>
+                  {newAddress ? (
+                    <div className='my-4'>
+                      <Input
+                        name='addressNickname'
+                        label='Address nickname'
+                        type='text'
+                        value={''}
+                        className={`${
+                          loaderData?.error?.message && 'border-red-500'
+                        }`}
+                      />
+                    </div>
+                  ) : null}
                 </div>
-                {newAddress ? (
-                  <div className='my-4'>
+              ) : null}
+              <div className='mt-5 border-t border-gray-200 pt-5'>
+                <h2 className='text-xl font-medium text-gray-900'>
+                  Contact information
+                </h2>
+                <div className='mt-4 grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4'>
+                  <div>
                     <Input
-                      name='addressNickname'
-                      label='Address nickname'
+                      name='contactPerson'
+                      label='Contact person'
                       type='text'
-                      value={''}
+                      value={selected?.contactPerson || ''}
                       className={`${
                         loaderData?.error?.message && 'border-red-500'
                       }`}
                     />
                   </div>
-                ) : null}
-              </div>
-              <h2 className='text-xl font-medium text-gray-900'>
-                Contact information
-              </h2>
 
-              <div className='mt-4'>
-                <Input
-                  name='phoneNumber'
-                  label='Phone number'
-                  type='text'
-                  value={''}
-                  className={`${
-                    loaderData?.error?.message && 'border-red-500'
-                  }`}
-                />
+                  <div>
+                    <Input
+                      name='phoneNumber'
+                      label='Phone number'
+                      type='text'
+                      value={selected?.phoneNumber || ''}
+                      className={`${
+                        loaderData?.error?.message && 'border-red-500'
+                      }`}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -260,36 +352,12 @@ export default function Example() {
               </h2>
 
               <div className='mt-4 grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4'>
-                <div>
-                  <Input
-                    name='firstName'
-                    label='First name'
-                    type='text'
-                    value={''}
-                    className={`${
-                      loaderData?.error?.message && 'border-red-500'
-                    }`}
-                  />
-                </div>
-
-                <div>
-                  <Input
-                    name='lastName'
-                    label='Last name'
-                    type='text'
-                    value={''}
-                    className={`${
-                      loaderData?.error?.message && 'border-red-500'
-                    }`}
-                  />
-                </div>
-
                 <div className='sm:col-span-2'>
                   <Input
                     name='address'
                     label='Address'
                     type='text'
-                    value={''}
+                    value={selected?.address || ''}
                     className={`${
                       loaderData?.error?.message && 'border-red-500'
                     }`}
@@ -301,7 +369,7 @@ export default function Example() {
                     name='city'
                     label='City / Municipality'
                     type='text'
-                    value={''}
+                    value={selected?.city || ''}
                     className={`${
                       loaderData?.error?.message && 'border-red-500'
                     }`}
@@ -310,7 +378,7 @@ export default function Example() {
 
                 <div>
                   <label
-                    htmlFor='region'
+                    htmlFor='province'
                     className='block text-sm font-medium text-gray-700'
                   >
                     Province
@@ -318,8 +386,8 @@ export default function Example() {
                   <div className='mt-1'>
                     <input
                       type='text'
-                      name='region'
-                      id='region'
+                      name='province'
+                      id='province'
                       value='Cavite'
                       disabled
                       autoComplete='address-level1'
@@ -416,6 +484,55 @@ export default function Example() {
                   ))}
                 </div>
               </RadioGroup>
+              <div className='mt-4 grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4'>
+                <div className='sm:col-span-2'>
+                  <Input
+                    name='cardNumber'
+                    label='Credit / debit card number'
+                    type='text'
+                    value={selected?.address || ''}
+                    className={`${
+                      loaderData?.error?.message && 'border-red-500'
+                    }`}
+                  />
+                </div>
+
+                <div className='sm:col-span-2'>
+                  <Input
+                    name='nameOnCard'
+                    label='Name on card'
+                    type='text'
+                    value={selected?.address || ''}
+                    className={`${
+                      loaderData?.error?.message && 'border-red-500'
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <Input
+                    name='expiration'
+                    label='Expiration date (MM/YY)'
+                    type='text'
+                    value={selected?.city || ''}
+                    className={`${
+                      loaderData?.error?.message && 'border-red-500'
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <Input
+                    name='cvc'
+                    label='CVC'
+                    type='text'
+                    value={selected?.city || ''}
+                    className={`${
+                      loaderData?.error?.message && 'border-red-500'
+                    }`}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Payment */}

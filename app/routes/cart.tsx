@@ -61,6 +61,7 @@ export const action: ActionFunction = async ({ request }) => {
     const currentOrder = await db.order.findFirst({
       where: {
         userId: user?.id,
+        status: 'IN_CART',
       },
     })
     const currentProductIds = currentOrder?.productIds
@@ -129,6 +130,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     const currentOrder = await db.order.findFirst({
       where: {
         userId: user.id,
+        status: 'IN_CART',
       },
     })
     const products = await db.product.findMany({

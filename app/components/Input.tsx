@@ -44,7 +44,7 @@ export const Input = forwardRef(
         </label>
         <div className='mt-1'>
           <input
-            defaultValue={value}
+            value={value}
             data-testid={dataTestId}
             className={`block w-full appearance-none rounded-md border ${
               error ? 'border-red-500' : 'border-gray-300'
