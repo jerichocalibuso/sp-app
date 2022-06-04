@@ -456,7 +456,6 @@ export default function Example() {
                         name='addressNickname'
                         label='Address nickname'
                         type='text'
-                        value={''}
                         className={`${
                           loaderData?.error?.message && 'border-red-500'
                         }`}
@@ -464,7 +463,38 @@ export default function Example() {
                     </div>
                   ) : null}
                 </div>
-              ) : null}
+              ) : (
+                <>
+                  <div className='my-4 flex items-center'>
+                    <input
+                      checked={newAddress}
+                      onChange={() => setNewAddress(!newAddress)}
+                      type='checkbox'
+                      name='newAddress'
+                      id='new-address'
+                      className='h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500'
+                    />
+                    <label
+                      htmlFor='new-address'
+                      className='ml-2 text-sm text-gray-900'
+                    >
+                      Save the following address as a new address
+                    </label>
+                  </div>
+                  {newAddress ? (
+                    <div className='my-4'>
+                      <Input
+                        name='addressNickname'
+                        label='Address nickname'
+                        type='text'
+                        className={`${
+                          loaderData?.error?.message && 'border-red-500'
+                        }`}
+                      />
+                    </div>
+                  ) : null}
+                </>
+              )}
               <div className='mt-5 border-t border-gray-200 pt-5'>
                 <h2 className='text-xl font-medium text-gray-900'>
                   Contact information
@@ -475,7 +505,7 @@ export default function Example() {
                       name='contactPerson'
                       label='Contact person'
                       type='text'
-                      value={selected?.contactPerson || ''}
+                      value={selected?.contactPerson || undefined}
                       className={`${
                         loaderData?.error?.message && 'border-red-500'
                       }`}
@@ -487,7 +517,7 @@ export default function Example() {
                       name='phoneNumber'
                       label='Phone number'
                       type='text'
-                      value={selected?.phoneNumber || ''}
+                      value={selected?.phoneNumber || undefined}
                       className={`${
                         loaderData?.error?.message && 'border-red-500'
                       }`}
@@ -508,7 +538,7 @@ export default function Example() {
                     name='address'
                     label='Address'
                     type='text'
-                    value={selected?.address || ''}
+                    value={selected?.address || undefined}
                     className={`${
                       loaderData?.error?.message && 'border-red-500'
                     }`}
@@ -520,7 +550,7 @@ export default function Example() {
                     name='city'
                     label='City / Municipality'
                     type='text'
-                    value={selected?.city || ''}
+                    value={selected?.city || undefined}
                     className={`${
                       loaderData?.error?.message && 'border-red-500'
                     }`}
