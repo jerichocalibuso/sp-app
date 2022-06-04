@@ -14,6 +14,9 @@
     "postinstall": "remix setup node",
     "start": "HOST=0.0.0.0 remix-serve api/_build"
   },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
   "dependencies": {
     "@headlessui/react": "^1.6.4",
     "@heroicons/react": "^1.0.6",

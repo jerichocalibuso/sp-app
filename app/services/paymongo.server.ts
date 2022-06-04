@@ -177,8 +177,14 @@ const createSource = async (type: string, orderId: string, amount: number) => {
         attributes: {
           amount: amount * 100,
           redirect: {
-            success: `http://localhost:3000/order-success/${orderId}`,
-            failed: 'http://localhost:3000/checkout?paymentFailed=true',
+            success:
+              process.env.NODE_ENV === 'development'
+                ? `http://localhost:3000/order-success/${orderId}`
+                : `https://www.camillemeat.shop/order-success/${orderId}`,
+            failed:
+              process.env.NODE_ENV === 'development'
+                ? `http://localhost:3000//checkout?paymentFailed=true`
+                : `https://www.camillemeat.shop//checkout?paymentFailed=true`,
           },
           type: type,
           currency: 'PHP',
@@ -384,7 +390,10 @@ const attachMayaIntent = async ({
         attributes: {
           payment_method: `${paymentMethodId}`,
           client_key: `${clientKey}`,
-          return_url: `http://localhost:3000/order-success/${orderId}`,
+          return_url:
+            process.env.NODE_ENV === 'development'
+              ? `http://localhost:3000/order-success/${orderId}`
+              : `https://www.camillemeat.shop/order-success/${orderId}`,
         },
       },
     }),

@@ -113,7 +113,7 @@ export const loader: LoaderFunction = async ({ params, request }) => {
       console.log(`updatedOrder: ${JSON.stringify(updatedOrder, null, 2)}`)
       return redirect(`/order-success/${orderId}`)
     } else {
-      return redirect('http://localhost:3000/checkout?paymentFailed=true')
+      return redirect('/checkout?paymentFailed=true')
     }
   }
 
