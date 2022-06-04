@@ -11,8 +11,10 @@ import { CashIcon } from '@heroicons/react/outline'
 import {
   ActionFunction,
   Form,
+  json,
   LoaderFunction,
   redirect,
+  useActionData,
   useLoaderData,
 } from 'remix'
 import { authenticator } from '~/services/auth.server'
@@ -22,22 +24,24 @@ import { Product } from './products'
 import { z } from 'zod'
 import { zfd } from 'zod-form-data'
 import { withZod } from '@remix-validated-form/with-zod'
-import { ValidatedForm, validationError } from 'remix-validated-form'
+import { useField, ValidatedForm, validationError } from 'remix-validated-form'
 import { Input } from '~/components/Input'
+import { payCard, createGCashSource } from '~/services/paymongo.server'
 
 const baseSchema = z.object({
   contactPerson: zfd.text(z.string().nonempty()),
   phoneNumber: zfd.text(z.string().nonempty()),
   address: zfd.text(z.string().nonempty()),
   city: zfd.text(z.string().nonempty()),
+  cardNumber: zfd.text(z.string().optional()),
 })
 
 export const addressValidator = withZod(baseSchema)
 
 const paymentMethods = [
+  { id: 'gcash', title: 'GCash', imageSrc: '/images/gcash-logo.png' },
   { id: 'card', title: 'Credit or debit card' },
   { id: 'cod', title: 'Cash on delivery' },
-  { id: 'gcash', title: 'GCash', imageSrc: '/images/gcash-logo.png' },
   { id: 'grabpay', title: 'GrabPay', imageSrc: '/images/grabpay-logo.png' },
   { id: 'paymaya', title: 'PayMaya', imageSrc: '/images/paymaya-logo.png' },
 ]
@@ -70,9 +74,30 @@ export const action: ActionFunction = async ({ request }) => {
   const orderId = formData.get('orderId')?.toString() || ''
   const paymentMethod = formData.get('paymentMethod[id]')?.toString() || ''
 
+  if (!orderId) {
+    return redirect('/cart')
+  }
+
+  const order = await db.order.findFirst({
+    where: {
+      id: orderId,
+      status: 'IN_CART',
+    },
+  })
+
+  if (!order?.id) {
+    return redirect('/cart')
+  }
+
   let orderAddress: Address | null = null
   if (newAddress) {
     const nickname = formData.get('addressNickname')?.toString() || 'Home'
+    if (!nickname)
+      return validationError({
+        fieldErrors: {
+          nickname: 'Required',
+        },
+      })
     const phoneNumber = formData.get('phoneNumber')?.toString() || ''
     const city = formData.get('city')?.toString() || ''
     const address = formData.get('address')?.toString() || ''
@@ -100,9 +125,75 @@ export const action: ActionFunction = async ({ request }) => {
   }
 
   if (paymentMethod === PaymentMethod.CARD) {
+    const cardNumber = formData.get('cardNumber')?.toString() || ''
+    const nameOnCard = formData.get('nameOnCard')?.toString() || ''
+    const expiration = formData.get('expiration')?.toString() || ''
+    const cvc = formData.get('cvc')?.toString() || ''
+
+    if (!cardNumber || !nameOnCard || !expiration || !cvc) {
+      return validationError({
+        fieldErrors: {
+          cardNumber: !cardNumber ? 'Required' : '',
+          nameOnCard: !nameOnCard ? 'Required' : '',
+          expiration: !expiration ? 'Required' : '',
+          cvc: !cvc ? 'Required' : '',
+        },
+      })
+    }
+
+    const res = await payCard({
+      cardNumber,
+      nameOnCard,
+      expiration,
+      cvc,
+      amount: order?.amount || 100,
+    })
+
+    if (res.errors) {
+      return json({
+        paymentErrors: res.errors,
+      })
+    }
+
+    await db.order.update({
+      where: {
+        id: orderId,
+      },
+      data: {
+        status: Status.PACKAGING,
+        paymentOption: 'CARD',
+        addressId: orderAddress?.id,
+        paymentReference: res.paymentReference,
+        paidAt: new Date(),
+      },
+    })
+    return redirect(`order-success/${orderId}`)
+  } else if (paymentMethod === PaymentMethod.GCASH) {
+    const res = await createGCashSource({
+      orderId,
+      amount: order?.amount || 100,
+    })
+    if (res.errors) {
+      return json({
+        paymentErrors: res.errors,
+      })
+    }
+
+    const { sourceId, checkoutUrl } = res
+    await db.order.update({
+      where: {
+        id: orderId,
+      },
+      data: {
+        paymentOption: 'GCASH',
+        addressId: orderAddress?.id,
+        sourceId: sourceId,
+      },
+    })
+
+    return redirect(checkoutUrl)
   } else {
     //COD
-    console.log('hello')
     await db.order.update({
       where: {
         id: orderId,
@@ -110,15 +201,15 @@ export const action: ActionFunction = async ({ request }) => {
       data: {
         status: Status.PACKAGING,
         paymentOption: 'COD',
+        addressId: orderAddress?.id,
+        paidAt: new Date(),
       },
     })
     return redirect(`order-success/${orderId}`)
   }
-
-  return null
 }
 
-export const loader: LoaderFunction = async ({ request }) => {
+export const loader: LoaderFunction = async ({ request, params }) => {
   const user = await authenticator.isAuthenticated(request)
 
   if (!user?.role) {
@@ -152,7 +243,17 @@ export const loader: LoaderFunction = async ({ request }) => {
     },
   })
 
-  return { products, currentOrder, savedAddresses }
+  console.log(`params: ${JSON.stringify(params, null, 2)}`)
+  console.log(`request: ${JSON.stringify(request, null, 2)}`)
+
+  const url = new URL(request.url)
+  const paymentFailed = url.searchParams.get('paymentFailed')
+  console.log(`paymentFailed: ${JSON.stringify(paymentFailed, null, 2)}`)
+
+  const data = { products, currentOrder, savedAddresses, paymentError: false }
+  if (paymentFailed) data.paymentError = true
+
+  return data
 }
 
 export default function Example() {
@@ -168,6 +269,8 @@ export default function Example() {
   const [newAddress, setNewAddress] = useState(!savedAddresses?.length)
 
   const loaderData = useLoaderData()
+  const actionData = useActionData()
+  console.log(`actionData: ${JSON.stringify(actionData, null, 2)}`)
 
   return (
     <div className='bg-gray-50'>
@@ -484,55 +587,57 @@ export default function Example() {
                   ))}
                 </div>
               </RadioGroup>
-              <div className='mt-4 grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4'>
-                <div className='sm:col-span-2'>
-                  <Input
-                    name='cardNumber'
-                    label='Credit / debit card number'
-                    type='text'
-                    value={selected?.address || ''}
-                    className={`${
-                      loaderData?.error?.message && 'border-red-500'
-                    }`}
-                  />
-                </div>
+              {selectedPaymentMethod.id === PaymentMethod.CARD ? (
+                <div className='mt-4 grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4'>
+                  <div className='sm:col-span-2'>
+                    <Input
+                      name='cardNumber'
+                      label='Credit / debit card number'
+                      value='4343434343434345'
+                      type='text'
+                      className={`${
+                        loaderData?.error?.message && 'border-red-500'
+                      }`}
+                    />
+                  </div>
 
-                <div className='sm:col-span-2'>
-                  <Input
-                    name='nameOnCard'
-                    label='Name on card'
-                    type='text'
-                    value={selected?.address || ''}
-                    className={`${
-                      loaderData?.error?.message && 'border-red-500'
-                    }`}
-                  />
-                </div>
+                  <div className='sm:col-span-2'>
+                    <Input
+                      name='nameOnCard'
+                      label='Name on card'
+                      value='Cardholder Name'
+                      type='text'
+                      className={`${
+                        loaderData?.error?.message && 'border-red-500'
+                      }`}
+                    />
+                  </div>
 
-                <div>
-                  <Input
-                    name='expiration'
-                    label='Expiration date (MM/YY)'
-                    type='text'
-                    value={selected?.city || ''}
-                    className={`${
-                      loaderData?.error?.message && 'border-red-500'
-                    }`}
-                  />
-                </div>
+                  <div>
+                    <Input
+                      name='expiration'
+                      label='Expiration date (MM/YY)'
+                      type='text'
+                      value='09/22'
+                      className={`${
+                        loaderData?.error?.message && 'border-red-500'
+                      }`}
+                    />
+                  </div>
 
-                <div>
-                  <Input
-                    name='cvc'
-                    label='CVC'
-                    type='text'
-                    value={selected?.city || ''}
-                    className={`${
-                      loaderData?.error?.message && 'border-red-500'
-                    }`}
-                  />
+                  <div>
+                    <Input
+                      name='cvc'
+                      label='CVC'
+                      type='text'
+                      value='123'
+                      className={`${
+                        loaderData?.error?.message && 'border-red-500'
+                      }`}
+                    />
+                  </div>
                 </div>
-              </div>
+              ) : null}
             </div>
 
             {/* Payment */}
@@ -640,6 +745,30 @@ export default function Example() {
               </dl>
 
               <div className='border-t border-gray-200 py-6 px-4 sm:px-6'>
+                <div>
+                  {loaderData?.paymentError ? (
+                    <>
+                      <p className='mb-4 font-semibold text-red-600'>
+                        Payment Errors
+                      </p>
+                      <p className='mb-4 font-medium text-red-600'>
+                        Payment failed. Please try again.
+                      </p>
+                    </>
+                  ) : null}
+                  {actionData?.paymentErrors ? (
+                    <>
+                      <p className='mb-4 font-semibold text-red-600'>
+                        Payment Errors
+                      </p>
+                      {actionData.paymentErrors.map((e: string) => (
+                        <p key={e} className='mb-4 font-medium text-red-600'>
+                          {e}
+                        </p>
+                      ))}
+                    </>
+                  ) : null}
+                </div>
                 <button
                   type='submit'
                   className='w-full rounded-md border border-transparent bg-red-500 py-3 px-4 text-base font-medium text-white shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-50'

@@ -74,8 +74,11 @@ model Order {
   status           Status
   paymentOption    PaymentOption?
   paymentReference String?
+  sourceId         String?
+  addressId        String?
   productIds       String[]
   products         Product[]
+  paidAt           DateTime?
 }
 
 enum Category {

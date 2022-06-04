@@ -1,3 +1,9 @@
+import { Order, Role, Status } from '@prisma/client'
+import { LoaderFunction, redirect, useLoaderData } from 'remix'
+import { authenticator } from '~/services/auth.server'
+import { createPayment, retrieveSource } from '~/services/paymongo.server'
+import { db } from '~/utils/db.server'
+
 /* This example requires Tailwind CSS v2.0+ */
 const products = [
   {
@@ -38,7 +44,67 @@ const products = [
   },
 ]
 
+export const loader: LoaderFunction = async ({ params, request }) => {
+  const { orderId } = params
+  const user = await authenticator.isAuthenticated(request)
+
+  if (!user?.role) {
+    return redirect('/signin')
+  }
+
+  if (user?.role !== Role.CUSTOMER) {
+    return redirect('/unauthorized')
+  }
+
+  let currentOrder = await db.order.findFirst({
+    where: {
+      id: orderId,
+      userId: user?.id,
+    },
+  })
+
+  console.log(`currentOrder: ${JSON.stringify(currentOrder, null, 2)}`)
+
+  if (!currentOrder) redirect('/cart')
+
+  if (currentOrder?.sourceId) {
+    const res = await retrieveSource(currentOrder?.sourceId)
+    if (!res.status) {
+      return redirect('/cart')
+    }
+
+    if (res.status === 'pending') {
+      return redirect(res.checkoutUrl)
+    } else if (res.status === 'chargeable') {
+      const paymentReference = await createPayment(
+        currentOrder.sourceId,
+        currentOrder?.amount
+      )
+      currentOrder = await db.order.update({
+        where: {
+          id: orderId,
+        },
+        data: {
+          status: Status.PACKAGING,
+          paymentReference: paymentReference,
+          paidAt: new Date(),
+        },
+      })
+    }
+  }
+
+  const products = await db.product.findMany({
+    where: {
+      id: {
+        in: currentOrder?.productIds || [],
+      },
+    },
+  })
+  return { currentOrder, products }
+}
+
 export default function Example() {
+  const loaderData = useLoaderData()
   return (
     <div className='bg-white'>
       <div className='mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8'>
