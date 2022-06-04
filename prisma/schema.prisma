@@ -79,6 +79,7 @@ model Order {
   productIds       String[]
   products         Product[]
   paidAt           DateTime?
+  paymentIntentId  String?
 }
 
 enum Category {

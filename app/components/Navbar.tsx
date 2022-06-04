@@ -195,7 +195,7 @@ export default function Navbar({ user, currentOrder }: NavbarProps) {
                               {currentOrder?.productIds?.length || 0}
                             </span>
                             <span className='sr-only'>
-                              items in cart, view bag
+                              items in cart, view cart
                             </span>
                           </Link>
                         ) : null}

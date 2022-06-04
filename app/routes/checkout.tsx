@@ -26,7 +26,12 @@ import { zfd } from 'zod-form-data'
 import { withZod } from '@remix-validated-form/with-zod'
 import { useField, ValidatedForm, validationError } from 'remix-validated-form'
 import { Input } from '~/components/Input'
-import { payCard, createGCashSource } from '~/services/paymongo.server'
+import {
+  payCard,
+  createGCashSource,
+  createGrabPaySource,
+  payMaya,
+} from '~/services/paymongo.server'
 
 const baseSchema = z.object({
   contactPerson: zfd.text(z.string().nonempty()),
@@ -39,11 +44,11 @@ const baseSchema = z.object({
 export const addressValidator = withZod(baseSchema)
 
 const paymentMethods = [
+  { id: 'paymaya', title: 'PayMaya', imageSrc: '/images/paymaya-logo.png' },
   { id: 'gcash', title: 'GCash', imageSrc: '/images/gcash-logo.png' },
   { id: 'card', title: 'Credit or debit card' },
   { id: 'cod', title: 'Cash on delivery' },
   { id: 'grabpay', title: 'GrabPay', imageSrc: '/images/grabpay-logo.png' },
-  { id: 'paymaya', title: 'PayMaya', imageSrc: '/images/paymaya-logo.png' },
 ]
 
 enum PaymentMethod {
@@ -171,7 +176,7 @@ export const action: ActionFunction = async ({ request }) => {
   } else if (paymentMethod === PaymentMethod.GCASH) {
     const res = await createGCashSource({
       orderId,
-      amount: order?.amount || 100,
+      amount: order?.amount || 0,
     })
     if (res.errors) {
       return json({
@@ -191,6 +196,54 @@ export const action: ActionFunction = async ({ request }) => {
       },
     })
 
+    return redirect(checkoutUrl)
+  } else if (paymentMethod === PaymentMethod.GRABPAY) {
+    const res = await createGrabPaySource({
+      orderId,
+      amount: order?.amount || 0,
+    })
+    if (res.errors) {
+      return json({
+        paymentErrors: res.errors,
+      })
+    }
+
+    const { sourceId, checkoutUrl } = res
+    await db.order.update({
+      where: {
+        id: orderId,
+      },
+      data: {
+        paymentOption: 'GRABPAY',
+        addressId: orderAddress?.id,
+        sourceId: sourceId,
+      },
+    })
+
+    return redirect(checkoutUrl)
+  } else if (paymentMethod === PaymentMethod.PAYMAYA) {
+    const res = await payMaya({
+      orderId,
+      amount: order?.amount || 0,
+    })
+
+    if (res.errors) {
+      return json({
+        paymentErrors: res.errors,
+      })
+    }
+
+    const { paymentIntentId, checkoutUrl } = res
+    await db.order.update({
+      where: {
+        id: orderId,
+      },
+      data: {
+        paymentOption: 'PAYMAYA',
+        addressId: orderAddress?.id,
+        paymentIntentId: paymentIntentId,
+      },
+    })
     return redirect(checkoutUrl)
   } else {
     //COD
@@ -243,12 +296,8 @@ export const loader: LoaderFunction = async ({ request, params }) => {
     },
   })
 
-  console.log(`params: ${JSON.stringify(params, null, 2)}`)
-  console.log(`request: ${JSON.stringify(request, null, 2)}`)
-
   const url = new URL(request.url)
   const paymentFailed = url.searchParams.get('paymentFailed')
-  console.log(`paymentFailed: ${JSON.stringify(paymentFailed, null, 2)}`)
 
   const data = { products, currentOrder, savedAddresses, paymentError: false }
   if (paymentFailed) data.paymentError = true
@@ -270,7 +319,6 @@ export default function Example() {
 
   const loaderData = useLoaderData()
   const actionData = useActionData()
-  console.log(`actionData: ${JSON.stringify(actionData, null, 2)}`)
 
   return (
     <div className='bg-gray-50'>

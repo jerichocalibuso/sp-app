@@ -1,7 +1,11 @@
-import { Order, Role, Status } from '@prisma/client'
-import { LoaderFunction, redirect, useLoaderData } from 'remix'
+import { Order, Product, Role, Status } from '@prisma/client'
+import { Link, LoaderFunction, redirect, useLoaderData } from 'remix'
 import { authenticator } from '~/services/auth.server'
-import { createPayment, retrieveSource } from '~/services/paymongo.server'
+import {
+  createPayment,
+  retrievePaymentIntent,
+  retrieveSource,
+} from '~/services/paymongo.server'
 import { db } from '~/utils/db.server'
 
 /* This example requires Tailwind CSS v2.0+ */
@@ -56,18 +60,16 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     return redirect('/unauthorized')
   }
 
-  let currentOrder = await db.order.findFirst({
+  const currentOrder = await db.order.findFirst({
     where: {
       id: orderId,
       userId: user?.id,
     },
   })
 
-  console.log(`currentOrder: ${JSON.stringify(currentOrder, null, 2)}`)
-
   if (!currentOrder) redirect('/cart')
 
-  if (currentOrder?.sourceId) {
+  if (currentOrder?.sourceId && !currentOrder?.paidAt) {
     const res = await retrieveSource(currentOrder?.sourceId)
     if (!res.status) {
       return redirect('/cart')
@@ -80,7 +82,7 @@ export const loader: LoaderFunction = async ({ params, request }) => {
         currentOrder.sourceId,
         currentOrder?.amount
       )
-      currentOrder = await db.order.update({
+      await db.order.update({
         where: {
           id: orderId,
         },
@@ -90,6 +92,28 @@ export const loader: LoaderFunction = async ({ params, request }) => {
           paidAt: new Date(),
         },
       })
+      return redirect(`/order-success/${orderId}`)
+    }
+  }
+
+  if (currentOrder?.paymentIntentId && !currentOrder?.paidAt) {
+    const res = await retrievePaymentIntent(currentOrder?.paymentIntentId)
+
+    if (res.status === 'paid') {
+      const updatedOrder = await db.order.update({
+        where: {
+          id: orderId,
+        },
+        data: {
+          status: Status.PACKAGING,
+          paymentReference: res.paymentReference,
+          paidAt: new Date(),
+        },
+      })
+      console.log(`updatedOrder: ${JSON.stringify(updatedOrder, null, 2)}`)
+      return redirect(`/order-success/${orderId}`)
+    } else {
+      return redirect('http://localhost:3000/checkout?paymentFailed=true')
     }
   }
 
@@ -104,7 +128,7 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 }
 
 export default function Example() {
-  const loaderData = useLoaderData()
+  const { currentOrder, products } = useLoaderData()
   return (
     <div className='bg-white'>
       <div className='mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8'>
@@ -120,8 +144,8 @@ export default function Example() {
           </p>
 
           <dl className='mt-12 text-sm font-medium'>
-            <dt className='text-gray-900'>Order number</dt>
-            <dd className='mt-2 text-red-500'>51547878755545848512</dd>
+            <dt className='text-gray-900'>Order ID</dt>
+            <dd className='mt-2 text-red-500'>{currentOrder?.id || ''}</dd>
           </dl>
         </div>
 
@@ -129,40 +153,46 @@ export default function Example() {
           <h2 className='sr-only'>Your order</h2>
 
           <h3 className='sr-only'>Items</h3>
-          {products.map((product) => (
-            <div
-              key={product.id}
-              className='flex space-x-6 border-b border-gray-200 py-10'
-            >
-              <img
-                src={product.imageSrc}
-                alt={product.imageAlt}
-                className='h-20 w-20 flex-none rounded-lg bg-gray-100 object-cover object-center sm:h-40 sm:w-40'
-              />
-              <div className='flex flex-auto flex-col'>
-                <div>
-                  <h4 className='font-medium text-gray-900'>
-                    <a href={product.href}>{product.name}</a>
-                  </h4>
-                  <p className='mt-2 text-sm text-gray-600'>
-                    {product.description}
-                  </p>
-                </div>
-                <div className='mt-6 flex flex-1 items-end'>
-                  <dl className='flex space-x-4 divide-x divide-gray-200 text-sm sm:space-x-6'>
-                    <div className='flex'>
-                      <dt className='font-medium text-gray-900'>Quantity</dt>
-                      <dd className='ml-2 text-gray-700'>{product.quantity}</dd>
-                    </div>
-                    <div className='flex pl-4 sm:pl-6'>
-                      <dt className='font-medium text-gray-900'>Price</dt>
-                      <dd className='ml-2 text-gray-700'>{product.price}</dd>
-                    </div>
-                  </dl>
+          {products.map((product: Product) => {
+            const quantity = currentOrder?.productIds.filter((id: string) => {
+              return product.id?.toString() === id
+            })?.length
+            return (
+              <div
+                key={product.id}
+                className='flex space-x-6 border-b border-gray-200 py-10'
+              >
+                <Link to={`/products/${product?.id}`}>
+                  <img loading='lazy' src={product?.imageUrl || ''} />
+                </Link>
+
+                <div className='flex flex-auto flex-col'>
+                  <div>
+                    <h4 className='font-medium text-gray-900 hover:text-red-500'>
+                      <Link to={`/products/${product?.id}`}>
+                        {product.name}
+                      </Link>
+                    </h4>
+                    <p className='mt-2 text-sm text-gray-600'>
+                      {product.description}
+                    </p>
+                  </div>
+                  <div className='mt-6 flex flex-1 items-end'>
+                    <dl className='flex space-x-4 divide-x divide-gray-200 text-sm sm:space-x-6'>
+                      <div className='flex'>
+                        <dt className='font-medium text-gray-900'>Quantity</dt>
+                        <dd className='ml-2 text-gray-700'>{quantity}</dd>
+                      </div>
+                      <div className='flex pl-4 sm:pl-6'>
+                        <dt className='font-medium text-gray-900'>Price</dt>
+                        <dd className='ml-2 text-gray-700'>{product.price}</dd>
+                      </div>
+                    </dl>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
 
           <div className=''>
             <h3 className='sr-only'>Your information</h3>

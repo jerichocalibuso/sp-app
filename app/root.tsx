@@ -44,7 +44,6 @@ export const loader: LoaderFunction = async ({ request }) => {
       where: {
         userId: user.id,
         status: 'IN_CART',
-        paymentOption: null,
       },
     })
 

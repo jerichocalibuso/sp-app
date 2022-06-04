@@ -26,7 +26,6 @@ const createPaymentIntent = async () => {
     options
   )
   const data = await res.json()
-  console.log(`data: ${JSON.stringify(data, null, 2)}`)
   return data
 }
 
@@ -140,7 +139,6 @@ export const payCard = async ({
     paymentIntentErrors.forEach(
       (error: any) => error?.detail && errors.push(error.detail)
     )
-    console.log(`errors: ${JSON.stringify(errors, null, 2)}`)
 
     return { errors }
   }
@@ -172,7 +170,7 @@ const createSource = async (type: string, orderId: string, amount: number) => {
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
-      Authorization: 'Basic c2tfdGVzdF9QTFN4elZOWUU4cHRGOTJERjVLVTl2VWc6',
+      Authorization: `Basic ${process.env.PAYMONGO_SECRET_KEY_BASE64}`,
     },
     body: JSON.stringify({
       data: {
@@ -202,7 +200,7 @@ export const createPayment = async (
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
-      Authorization: 'Basic c2tfdGVzdF9QTFN4elZOWUU4cHRGOTJERjVLVTl2VWc6',
+      Authorization: `Basic ${process.env.PAYMONGO_SECRET_KEY_BASE64}`,
     },
     body: JSON.stringify({
       data: {
@@ -251,12 +249,36 @@ export const createGCashSource = async ({
   }
 }
 
+export const createGrabPaySource = async ({
+  orderId,
+  amount,
+}: CreateSourceArgs) => {
+  const { data: sourceData, errors: sourceErrors } = await createSource(
+    'grab_pay',
+    orderId,
+    amount
+  )
+
+  if (sourceErrors?.length) {
+    let errors: any[] = []
+    sourceErrors.forEach(
+      (error: any) => error?.detail && errors.push(error.detail)
+    )
+    return { errors }
+  }
+
+  return {
+    checkoutUrl: sourceData.attributes.redirect.checkout_url,
+    sourceId: sourceData.id,
+  }
+}
+
 export const retrieveSource = async (sourceId: string) => {
   const options = {
     method: 'GET',
     headers: {
       Accept: 'application/json',
-      Authorization: 'Basic c2tfdGVzdF9QTFN4elZOWUU4cHRGOTJERjVLVTl2VWc6',
+      Authorization: `Basic ${process.env.PAYMONGO_SECRET_KEY_BASE64}`,
     },
   }
   const res = await fetch(
@@ -267,5 +289,159 @@ export const retrieveSource = async (sourceId: string) => {
   return {
     status: sourceData.attributes.status,
     checkoutUrl: sourceData.attributes.redirect.checkout_url,
+  }
+}
+
+export const retrievePaymentIntent = async (paymentIntentId: string) => {
+  const options = {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Basic ${process.env.PAYMONGO_SECRET_KEY_BASE64}`,
+    },
+  }
+  const res = await fetch(
+    `https://api.paymongo.com/v1/payment_intents/${paymentIntentId}`,
+    options
+  )
+
+  const { data: paymentIntentData } = await res.json()
+  return {
+    status: paymentIntentData.attributes.payments[0].attributes.status,
+    paymentReference: paymentIntentData.attributes.payments[0].id,
+  }
+}
+
+export const createMayaIntent = async (amount: number) => {
+  const options = {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      Authorization: `Basic ${process.env.PAYMONGO_SECRET_KEY_BASE64}`,
+    },
+    body: JSON.stringify({
+      data: {
+        attributes: {
+          amount: 10000,
+          payment_method_allowed: ['paymaya'],
+          payment_method_options: { card: { request_three_d_secure: 'any' } },
+          currency: 'PHP',
+          capture_type: 'automatic',
+        },
+      },
+    }),
+  }
+
+  const res = await fetch(
+    'https://api.paymongo.com/v1/payment_intents',
+    options
+  )
+  const data = await res.json()
+  return data
+}
+
+const createMayaMethod = async () => {
+  const options = {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      Authorization: `Basic ${process.env.PAYMONGO_SECRET_KEY_BASE64}`,
+    },
+    body: JSON.stringify({ data: { attributes: { type: 'paymaya' } } }),
+  }
+
+  const res = await fetch(
+    'https://api.paymongo.com/v1/payment_methods',
+    options
+  )
+  const data = await res.json()
+  return data
+}
+
+interface MayaMethodArgs {
+  paymentIntentId: string
+  paymentMethodId: string
+  orderId: string
+  clientKey: string
+}
+const attachMayaIntent = async ({
+  paymentIntentId,
+  paymentMethodId,
+  orderId,
+  clientKey,
+}: MayaMethodArgs) => {
+  const options = {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      Authorization: `Basic ${process.env.PAYMONGO_SECRET_KEY_BASE64}`,
+    },
+    body: JSON.stringify({
+      data: {
+        attributes: {
+          payment_method: `${paymentMethodId}`,
+          client_key: `${clientKey}`,
+          return_url: `http://localhost:3000/order-success/${orderId}`,
+        },
+      },
+    }),
+  }
+  const res = await fetch(
+    `https://api.paymongo.com/v1/payment_intents/${paymentIntentId}/attach`,
+    options
+  )
+
+  const data = await res.json()
+  return data
+}
+
+export const payMaya = async ({ amount, orderId }: CreateSourceArgs) => {
+  const { data: paymentMethodData, errors: paymentMethodErrors } =
+    await createMayaMethod()
+
+  const { data: paymentIntentData, errors: paymentIntentErrors } =
+    await createMayaIntent(amount)
+
+  if (paymentMethodErrors?.length || paymentIntentErrors?.length) {
+    let errors: any[] = []
+    paymentMethodErrors.forEach(
+      (error: any) => error?.detail && errors.push(error.detail)
+    )
+    paymentIntentErrors.forEach(
+      (error: any) => error?.detail && errors.push(error.detail)
+    )
+
+    return { errors }
+  }
+
+  const clientKey = paymentIntentData.attributes.client_key
+  const paymentMethodId = paymentMethodData.id
+  const paymentIntentId = paymentIntentData.id
+
+  const {
+    data: paymentIntentAttachmentData,
+    errors: paymentIntentAttachmentErrors,
+  } = await attachMayaIntent({
+    paymentIntentId,
+    paymentMethodId,
+    clientKey,
+    orderId,
+  })
+
+  if (paymentIntentAttachmentErrors?.length) {
+    let errors: any[] = []
+    paymentIntentAttachmentErrors.forEach(
+      (error: any) => error?.detail && errors.push(error.detail)
+    )
+    return { errors }
+  }
+
+  return {
+    checkoutUrl:
+      paymentIntentAttachmentData.attributes.next_action.redirect.url,
+    paymentIntentId: paymentIntentAttachmentData.id,
   }
 }

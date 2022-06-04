@@ -19,104 +19,99 @@ import { useState } from 'react'
 import { Disclosure, RadioGroup, Tab } from '@headlessui/react'
 import { MinusIcon, StarIcon } from '@heroicons/react/solid'
 import { MinusSmIcon, PlusIcon, PlusSmIcon } from '@heroicons/react/outline'
-import { useParams } from 'remix'
+import {
+  ActionFunction,
+  Form,
+  LoaderFunction,
+  redirect,
+  useLoaderData,
+  useParams,
+} from 'remix'
 import invariant from 'tiny-invariant'
-import { useLocation } from 'react-router'
 import { Quantity } from '~/components/Quantity'
+import { db } from '~/utils/db.server'
+import { validationError } from 'remix-validated-form'
+import { authenticator } from '~/services/auth.server'
+import { Role, Status } from '@prisma/client'
 
 export type Breadcrumb = {
   label: string
   route?: string
 }
 
-const product = {
-  name: 'Zip Tote Basket',
-  price: '$140',
-  rating: 4,
-  breadcrumbs: [
-    { id: 1, name: 'Women', href: '#' },
-    { id: 2, name: 'Clothing', href: '#' },
-  ],
-  images: [
-    {
-      id: 1,
-      name: 'Angled view',
-      src: 'https://tailwindui.com/img/ecommerce-images/product-page-03-product-01.jpg',
-      alt: 'Angled front view with bag zipped and handles upright.',
+export const action: ActionFunction = async ({ request, params }) => {
+  const user = await authenticator.isAuthenticated(request)
+  if (user?.role === Role.RIDER || user?.role === Role.ADMIN) {
+    return redirect('/unauthorized')
+  }
+
+  if (!user?.role) {
+    return redirect('/signin')
+  }
+
+  const { id: productId } = params
+  const product = await db.product.findFirst({
+    where: {
+      id: productId,
     },
-    // More images...
-  ],
-  colors: [
-    {
-      name: 'Washed Black',
-      bgColor: 'bg-gray-700',
-      selectedColor: 'ring-gray-700',
-    },
-    { name: 'White', bgColor: 'bg-white', selectedColor: 'ring-gray-400' },
-    {
-      name: 'Washed Gray',
-      bgColor: 'bg-gray-500',
-      selectedColor: 'ring-gray-500',
-    },
-  ],
-  description: `
-    <p>The Zip Tote Basket is the perfect midpoint between shopping tote and comfy backpack. With convertible straps, you can hand carry, should sling, or backpack this convenient and spacious bag. The zip top and durable canvas construction keeps your goods protected for all-day use.</p>
-  `,
-  details: [
-    {
-      name: 'Storage Information',
-      items: [
-        'Multiple strap configurations',
-        'Spacious interior with top zip',
-        'Leather handle and tabs',
-        'Interior dividers',
-        'Stainless strap loops',
-        'Double stitched construction',
-        'Water-resistant',
-      ],
-    },
-    {
-      name: 'Delivery Information',
-      items: [
-        'Multiple strap configurations',
-        'Spacious interior with top zip',
-        'Leather handle and tabs',
-        'Interior dividers',
-        'Stainless strap loops',
-        'Double stitched construction',
-        'Water-resistant',
-      ],
-    },
-    {
-      name: 'Promos',
-      items: [
-        'Multiple strap configurations',
-        'Spacious interior with top zip',
-        'Leather handle and tabs',
-        'Interior dividers',
-        'Stainless strap loops',
-        'Double stitched construction',
-        'Water-resistant',
-      ],
-    },
-    // More sections...
-  ],
+  })
+
+  if (!product) {
+    return null
+  }
+  console.log(`product: ${JSON.stringify(product, null, 2)}`)
+  if (user?.role === Role.CUSTOMER) {
+    const currentOrder = await db.order.findFirst({
+      where: {
+        userId: user?.id,
+        status: 'IN_CART',
+      },
+    })
+
+    if (currentOrder) {
+      const res = await db.order.update({
+        where: {
+          id: currentOrder?.id,
+        },
+        data: {
+          amount: currentOrder.amount + product.price,
+          productIds: {
+            push: [productId ? productId : ''],
+          },
+        },
+      })
+      return res
+    } else {
+      return await db.order.create({
+        data: {
+          amount: product.price,
+          productIds: [product.id],
+          status: Status.IN_CART,
+          userId: user?.id,
+        },
+      })
+    }
+  }
 }
 
-function classNames(...classes: any) {
-  return classes.filter(Boolean).join(' ')
+export const loader: LoaderFunction = async ({ params }) => {
+  const { id: productId } = params
+  const product = await db.product.findFirst({
+    where: {
+      id: productId,
+    },
+  })
+  return product
 }
 
 export default function Example() {
-  const [selectedColor, setSelectedColor] = useState(product.colors[0])
-
-  const { id } = useParams()
-  const prod = products.find((p) => p.id === Number(id))
-  invariant(prod, 'error')
-
+  const product = useLoaderData()
   const breads: Breadcrumb[] = [
     { label: 'All Products', route: '/products' },
-    { label: prod.category, route: `/${prod.category.toLowerCase()}` },
+    {
+      label: `${product.category[0]}${product.category.toLowerCase().slice(1)}`,
+      route: `/${product.category.toLowerCase()}`,
+    },
   ]
 
   return (
@@ -160,7 +155,7 @@ export default function Example() {
                 aria-current='page'
                 className='font-medium text-red-400 hover:text-red-600'
               >
-                {prod.name}
+                {product.name}
               </a>
             </li>
           </ol>
@@ -205,8 +200,7 @@ export default function Example() {
 
           <div className='flex flex-col-reverse'>
             <img
-              src={prod.imageSrc}
-              alt={prod.imageAlt}
+              src={product.imageUrl}
               className='h-full w-full object-cover object-center sm:rounded-lg'
             />
           </div>
@@ -214,13 +208,13 @@ export default function Example() {
           {/* Product info */}
           <div className='mt-10 px-4 sm:mt-16 sm:px-0 lg:mt-0'>
             <h1 className='text-4xl font-extrabold tracking-tight text-gray-900'>
-              {prod.name}
+              {product.name}
             </h1>
 
             <div className='mt-3'>
               <h2 className='sr-only'>Product information</h2>
               <p className='text-3xl font-semibold text-red-500'>
-                ₱{prod.price}{' '}
+                ₱{product.price}{' '}
               </p>
             </div>
 
@@ -228,23 +222,14 @@ export default function Example() {
               <h3 className='sr-only'>Description</h3>
 
               <p className='mb-2 text-base font-medium text-gray-900'>
-                {prod.weight ? `${prod.weight} per quantity` : null}
+                {product.weight ? `${product.weight} per quantity` : null}
               </p>
               <p className='space-y-6 text-base text-gray-700'>
-                {prod.description}
+                {product.description}
               </p>
             </div>
 
-            <form className='mt-6'>
-              {/* Quantity */}
-              <div>
-                <h3 className='text-md mb-2 font-medium text-gray-900'>
-                  Quantity
-                </h3>
-
-                <Quantity />
-              </div>
-
+            <Form method='post' className='mt-6'>
               <div className='sm:flex-col1 mt-10 flex'>
                 <button
                   type='submit'
@@ -253,60 +238,12 @@ export default function Example() {
                   Add to cart
                 </button>
               </div>
-            </form>
+            </Form>
 
             <section aria-labelledby='details-heading' className='mt-12'>
               <h2 id='details-heading' className='sr-only'>
                 Additional details
               </h2>
-
-              <div className='divide-y divide-gray-200 border-t'>
-                {product.details.map((detail) => (
-                  <Disclosure as='div' key={detail.name}>
-                    {({ open }) => (
-                      <>
-                        <h3>
-                          <Disclosure.Button className='group relative flex w-full items-center justify-between py-6 text-left'>
-                            <span
-                              className={classNames(
-                                open
-                                  ? 'text-red-500 group-hover:text-red-600'
-                                  : 'text-gray-900',
-                                'text-sm font-medium'
-                              )}
-                            >
-                              {detail.name}
-                            </span>
-                            <span className='ml-6 flex items-center'>
-                              {open ? (
-                                <MinusSmIcon
-                                  className='block h-6 w-6 text-red-500 group-hover:text-red-600'
-                                  aria-hidden='true'
-                                />
-                              ) : (
-                                <PlusSmIcon
-                                  className='block h-6 w-6 text-gray-400 group-hover:text-gray-500'
-                                  aria-hidden='true'
-                                />
-                              )}
-                            </span>
-                          </Disclosure.Button>
-                        </h3>
-                        <Disclosure.Panel
-                          as='div'
-                          className='prose prose-sm pb-6'
-                        >
-                          <ul role='list'>
-                            {detail.items.map((item) => (
-                              <li key={item}>{item}</li>
-                            ))}
-                          </ul>
-                        </Disclosure.Panel>
-                      </>
-                    )}
-                  </Disclosure>
-                ))}
-              </div>
             </section>
           </div>
         </div>
