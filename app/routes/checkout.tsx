@@ -44,10 +44,10 @@ const baseSchema = z.object({
 export const addressValidator = withZod(baseSchema)
 
 const paymentMethods = [
-  { id: 'paymaya', title: 'PayMaya', imageSrc: '/images/paymaya-logo.png' },
-  { id: 'gcash', title: 'GCash', imageSrc: '/images/gcash-logo.png' },
-  { id: 'card', title: 'Credit or debit card' },
   { id: 'cod', title: 'Cash on delivery' },
+  { id: 'card', title: 'Credit or debit card' },
+  { id: 'gcash', title: 'GCash', imageSrc: '/images/gcash-logo.png' },
+  { id: 'paymaya', title: 'PayMaya', imageSrc: '/images/paymaya-logo.png' },
   { id: 'grabpay', title: 'GrabPay', imageSrc: '/images/grabpay-logo.png' },
 ]
 
