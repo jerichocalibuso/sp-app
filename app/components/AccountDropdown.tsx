@@ -35,6 +35,13 @@ const customerMenuItems: MenuItem[] = [
     route: '/order-history',
   },
 ]
+
+const riderMenuItems: MenuItem[] = [
+  {
+    label: 'Assigned Orders',
+    route: '/assigned-orders',
+  },
+]
 const getMenuItems = (role: Role) => {
   if (role === Role.ADMIN) {
     return adminMenuItems.map((item) => (
@@ -53,6 +60,21 @@ const getMenuItems = (role: Role) => {
       </Menu.Item>
     ))
   } else if (role === Role.RIDER) {
+    return riderMenuItems.map((item) => (
+      <Menu.Item key={item.route}>
+        {({ active }) => (
+          <Link
+            to={item.route}
+            className={classNames(
+              active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+              'block px-4 py-2 text-sm'
+            )}
+          >
+            {item.label}
+          </Link>
+        )}
+      </Menu.Item>
+    ))
   } else if (role === Role.CUSTOMER) {
     return customerMenuItems.map((item) => (
       <Menu.Item key={item.route}>

@@ -78,16 +78,25 @@ export default function Navbar({ user, currentOrder }: NavbarProps) {
               </Tab.Group>
 
               <div className='space-y-6 border-t border-gray-200 py-6 px-4'>
-                {navigation.pages.map((page) => (
-                  <div key={page.name} className='flow-root'>
-                    <Link
-                      to={page.href}
-                      className='-m-2 block p-2 font-medium text-gray-900'
-                    >
-                      {page.name}
-                    </Link>
-                  </div>
-                ))}
+                {user?.role === Role.RIDER ? (
+                  <Link
+                    to={'/assigned-orders'}
+                    className='-m-2 block p-2 font-medium text-gray-900'
+                  >
+                    Assgined Orders
+                  </Link>
+                ) : (
+                  navigation.pages.map((page) => (
+                    <div key={page.name} className='flow-root'>
+                      <Link
+                        to={page.href}
+                        className='-m-2 block p-2 font-medium text-gray-900'
+                      >
+                        {page.name}
+                      </Link>
+                    </div>
+                  ))
+                )}
               </div>
 
               <div className='space-y-6 border-t border-gray-200 py-6 px-4'>
@@ -138,15 +147,24 @@ export default function Navbar({ user, currentOrder }: NavbarProps) {
                     {/* Mega menus */}
                     <Popover.Group className='ml-8'>
                       <div className='flex h-full justify-center space-x-8'>
-                        {navigation.pages.map((page) => (
+                        {user?.role === Role.RIDER ? (
                           <Link
-                            key={page.name}
-                            to={page.href}
+                            to={'/assigned-orders'}
                             className='flex items-center text-sm font-medium text-gray-700 hover:text-red-600'
                           >
-                            {page.name}
+                            Assgined Orders
                           </Link>
-                        ))}
+                        ) : (
+                          navigation.pages.map((page) => (
+                            <Link
+                              key={page.name}
+                              to={page.href}
+                              className='flex items-center text-sm font-medium text-gray-700 hover:text-red-600'
+                            >
+                              {page.name}
+                            </Link>
+                          ))
+                        )}
                       </div>
                     </Popover.Group>
                   </div>
