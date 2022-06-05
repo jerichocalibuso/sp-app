@@ -1,54 +1,9 @@
-import { Order, Product, Role, Status } from '@prisma/client'
-import { authenticator } from '~/services/auth.server'
+import { Product, Role } from '@prisma/client'
 import { LoaderFunction, redirect } from '@remix-run/node'
+import { useLoaderData, Link } from '@remix-run/react'
+import { authenticator } from '~/services/auth.server'
 
-import {
-  createPayment,
-  retrievePaymentIntent,
-  retrieveSource,
-} from '~/services/paymongo.server'
 import { db } from '~/utils/db.server'
-import { Link, useLoaderData } from '@remix-run/react'
-
-/* This example requires Tailwind CSS v2.0+ */
-const products = [
-  {
-    id: 1,
-    name: 'Cold Brew Bottle',
-    description:
-      'This glass bottle comes with a mesh insert for steeping tea or cold-brewing coffee. Pour from any angle and remove the top for easy cleaning.',
-    href: '#',
-    quantity: 1,
-    price: '$32.00',
-    imageSrc:
-      'https://tailwindui.com/img/ecommerce-images/confirmation-page-05-product-01.jpg',
-    imageAlt: 'Glass bottle with black plastic pour top and mesh insert.',
-  },
-  {
-    id: 1,
-    name: 'Cold Brew Bottle',
-    description:
-      'This glass bottle comes with a mesh insert for steeping tea or cold-brewing coffee. Pour from any angle and remove the top for easy cleaning.',
-    href: '#',
-    quantity: 1,
-    price: '$32.00',
-    imageSrc:
-      'https://tailwindui.com/img/ecommerce-images/confirmation-page-05-product-01.jpg',
-    imageAlt: 'Glass bottle with black plastic pour top and mesh insert.',
-  },
-  {
-    id: 1,
-    name: 'Cold Brew Bottle',
-    description:
-      'This glass bottle comes with a mesh insert for steeping tea or cold-brewing coffee. Pour from any angle and remove the top for easy cleaning.',
-    href: '#',
-    quantity: 1,
-    price: '$32.00',
-    imageSrc:
-      'https://tailwindui.com/img/ecommerce-images/confirmation-page-05-product-01.jpg',
-    imageAlt: 'Glass bottle with black plastic pour top and mesh insert.',
-  },
-]
 
 export const loader: LoaderFunction = async ({ params, request }) => {
   const { orderId } = params
@@ -62,115 +17,49 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     return redirect('/unauthorized')
   }
 
-  const currentOrder = await db.order.findFirst({
+  const order = await db.order.findFirst({
     where: {
       id: orderId,
       userId: user?.id,
     },
   })
 
-  if (!currentOrder) redirect('/cart')
-
-  if (currentOrder?.sourceId && !currentOrder?.paidAt) {
-    const res = await retrieveSource(currentOrder?.sourceId)
-    if (!res.status) {
-      return redirect('/cart')
-    }
-
-    if (res.status === 'pending') {
-      return redirect(res.checkoutUrl)
-    } else if (res.status === 'chargeable') {
-      const paymentReference = await createPayment(
-        currentOrder.sourceId,
-        currentOrder?.amount
-      )
-      await db.order.update({
-        where: {
-          id: orderId,
-        },
-        data: {
-          status: Status.PACKAGING,
-          paymentReference: paymentReference,
-          paidAt: new Date(),
-        },
-      })
-      await db.product.updateMany({
-        where: {
-          id: {
-            in: currentOrder.productIds || [],
-          },
-        },
-        data: {
-          stock: { decrement: 1 },
-        },
-      })
-      return redirect(`/order-success/${orderId}`)
-    }
-  }
-
-  if (currentOrder?.paymentIntentId && !currentOrder?.paidAt) {
-    const res = await retrievePaymentIntent(currentOrder?.paymentIntentId)
-
-    if (res.status === 'paid') {
-      const updatedOrder = await db.order.update({
-        where: {
-          id: orderId,
-        },
-        data: {
-          status: Status.PACKAGING,
-          paymentReference: res.paymentReference,
-          paidAt: new Date(),
-        },
-      })
-      await db.product.updateMany({
-        where: {
-          id: {
-            in: updatedOrder.productIds || [],
-          },
-        },
-        data: {
-          stock: { decrement: 1 },
-        },
-      })
-      return redirect(`/order-success/${orderId}`)
-    } else {
-      return redirect('/checkout?paymentFailed=true')
-    }
-  }
+  if (!order) redirect('/cart')
 
   const products = await db.product.findMany({
     where: {
       id: {
-        in: currentOrder?.productIds || [],
+        in: order?.productIds || [],
       },
     },
   })
-  return { currentOrder, products }
+  return { order, products }
 }
 
-export default function Example() {
-  const { currentOrder, products } = useLoaderData()
+export default function OrderDetailsPage() {
+  const { order, products } = useLoaderData()
   return (
     <div className='bg-white'>
       <div className='mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8'>
         <div className='max-w-xl'>
-          <h1 className='text-sm font-semibold uppercase tracking-wide text-red-500'>
+          <h1 className='mt-2 text-4xl font-extrabold tracking-tight sm:text-5xl'>
             Order details
           </h1>
-          <p className='mt-2 text-4xl font-extrabold tracking-tight sm:text-5xl'>
-            It's on the way!
-          </p>
           <p className='mt-2 text-base text-gray-500'>
-            Your order has been placed and will be delivered to you soon.
+            {new Date(order?.paidAt)?.toLocaleDateString('en-us', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            }) || ''}
           </p>
 
           <dl className='mt-12 text-sm font-medium'>
             <dt className='text-gray-900'>Order ID</dt>
-            <dd className='mt-2 text-red-500'>{currentOrder?.id || ''}</dd>
+            <dd className='mt-2 text-red-500'>{order?.id || ''}</dd>
           </dl>
           <dl className='mt-6 text-sm font-medium'>
             <dt className='text-gray-900'>Order status</dt>
-            <dd className='mt-2 text-red-500'>{currentOrder?.status || ''}</dd>
+            <dd className='mt-2 text-red-500'>{order?.status || ''}</dd>
           </dl>
         </div>
 
@@ -179,7 +68,7 @@ export default function Example() {
 
           <h3 className='sr-only'>Items</h3>
           {products.map((product: Product) => {
-            const quantity = currentOrder?.productIds.filter((id: string) => {
+            const quantity = order?.productIds.filter((id: string) => {
               return product.id?.toString() === id
             })?.length
             return (
@@ -212,7 +101,7 @@ export default function Example() {
                       </div>
                       <div className='flex pl-4 sm:pl-6'>
                         <dt className='font-medium text-gray-900'>Price</dt>
-                        <dd className='ml-2 text-gray-700'>{product.price}</dd>
+                        <dd className='ml-2 text-gray-700'>₱{product.price}</dd>
                       </div>
                     </dl>
                   </div>
@@ -254,7 +143,7 @@ export default function Example() {
             <dl className='space-y-6 border-t border-gray-200 pt-10 text-sm'>
               <div className='flex justify-between'>
                 <dt className='font-medium text-gray-900'>Subtotal</dt>
-                <dd className='text-gray-700'>₱50</dd>
+                <dd className='text-gray-700'>₱{order.amount}</dd>
               </div>
               <div className='flex justify-between'>
                 <dt className='flex font-medium text-gray-900'>
@@ -271,7 +160,7 @@ export default function Example() {
               </div>
               <div className='flex justify-between'>
                 <dt className='font-medium text-gray-900'>Total</dt>
-                <dd className='text-gray-900'>₱50</dd>
+                <dd className='text-gray-900'>₱{order.amount}</dd>
               </div>
             </dl>
           </div>

@@ -14,7 +14,7 @@ import { useState } from 'react'
 import { FileError, useDropzone } from 'react-dropzone'
 import { db } from '~/utils/db.server'
 import invariant from 'tiny-invariant'
-import { Link } from 'react-router-dom'
+import { Link } from '@remix-run/react'
 
 interface CustomFile extends File {
   preview?: string

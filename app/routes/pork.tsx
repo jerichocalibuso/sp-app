@@ -1,5 +1,6 @@
 import { Category } from '@prisma/client'
-import { LoaderFunction, useLoaderData } from 'remix'
+import { LoaderFunction } from '@remix-run/node'
+import { useLoaderData } from '@remix-run/react'
 import { ProductsPage } from '~/components/ProductsPage'
 import { db } from '~/utils/db.server'
 import { Product } from './products'

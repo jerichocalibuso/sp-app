@@ -1,5 +1,6 @@
 import { Role, Status } from '@prisma/client'
-import { ActionFunction, LoaderFunction, redirect, useLoaderData } from 'remix'
+import { ActionFunction, LoaderFunction, redirect } from '@remix-run/node'
+import { useLoaderData } from '@remix-run/react'
 import { validationError } from 'remix-validated-form'
 import { ProductsPage } from '~/components/ProductsPage'
 import { authenticator } from '~/services/auth.server'

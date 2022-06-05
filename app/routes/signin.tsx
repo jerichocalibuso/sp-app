@@ -1,5 +1,4 @@
 import { Form, Link, useLoaderData, useTransition } from '@remix-run/react'
-import { ActionFunction, json, LoaderFunction } from '@remix-run/server-runtime'
 import { authenticator } from '~/services/auth.server'
 
 import { SocialsProvider } from 'remix-auth-socials'
@@ -13,6 +12,7 @@ import { ValidatedForm, validationError } from 'remix-validated-form'
 import { z } from 'zod'
 import { zfd } from 'zod-form-data'
 import { Input } from '~/components/Input'
+import { ActionFunction, LoaderFunction, json } from '@remix-run/node'
 
 interface SocialsButtonProps {
   provider: SocialsProvider

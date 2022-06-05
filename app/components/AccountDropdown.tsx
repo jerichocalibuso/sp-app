@@ -29,6 +29,12 @@ const adminMenuItems: MenuItem[] = [
   },
 ]
 
+const customerMenuItems: MenuItem[] = [
+  {
+    label: 'Order History',
+    route: '/order-history',
+  },
+]
 const getMenuItems = (role: Role) => {
   if (role === Role.ADMIN) {
     return adminMenuItems.map((item) => (
@@ -48,6 +54,21 @@ const getMenuItems = (role: Role) => {
     ))
   } else if (role === Role.RIDER) {
   } else if (role === Role.CUSTOMER) {
+    return customerMenuItems.map((item) => (
+      <Menu.Item key={item.route}>
+        {({ active }) => (
+          <Link
+            to={item.route}
+            className={classNames(
+              active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+              'block px-4 py-2 text-sm'
+            )}
+          >
+            {item.label}
+          </Link>
+        )}
+      </Menu.Item>
+    ))
   }
 }
 

@@ -178,13 +178,6 @@ export default function Navbar({ user, currentOrder }: NavbarProps) {
                       <div className='flex space-x-8'></div>
 
                       <div className='flex space-x-6'>
-                        <Link
-                          to='#'
-                          className=' text-gray-700 hover:text-red-600'
-                        >
-                          <span className='sr-only'>Search</span>
-                          <SearchIcon className='h-6 w-6' aria-hidden='true' />
-                        </Link>
                         {user?.role === Role.CUSTOMER ? (
                           <Link to='/cart' className='group  flex items-center'>
                             <ShoppingCartIcon

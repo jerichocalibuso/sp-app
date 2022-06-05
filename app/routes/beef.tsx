@@ -1,7 +1,8 @@
-import { LoaderFunction, useLoaderData } from 'remix'
 import { ProductsPage } from '~/components/ProductsPage'
 import { db } from '~/utils/db.server'
 import { Category, Product } from './products'
+import { LoaderFunction } from '@remix-run/node'
+import { useLoaderData } from '@remix-run/react'
 
 export const loader: LoaderFunction = async ({ params }) => {
   const products = await db.product.findMany({

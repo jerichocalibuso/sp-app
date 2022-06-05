@@ -90,6 +90,10 @@ export const action: ActionFunction = async ({ request }) => {
     },
   })
 
+  if (!order) {
+    return redirect('/cart')
+  }
+
   if (!order?.id) {
     return redirect('/cart')
   }
@@ -151,7 +155,7 @@ export const action: ActionFunction = async ({ request }) => {
       nameOnCard,
       expiration,
       cvc,
-      amount: order?.amount || 100,
+      amount: order.amount,
     })
 
     if (res.errors) {
@@ -172,6 +176,18 @@ export const action: ActionFunction = async ({ request }) => {
         paidAt: new Date(),
       },
     })
+
+    await db.product.updateMany({
+      where: {
+        id: {
+          in: order.productIds || [],
+        },
+      },
+      data: {
+        stock: { decrement: 1 },
+      },
+    })
+
     return redirect(`order-success/${orderId}`)
   } else if (paymentMethod === PaymentMethod.GCASH) {
     const res = await createGCashSource({
@@ -256,6 +272,17 @@ export const action: ActionFunction = async ({ request }) => {
         paymentOption: 'COD',
         addressId: orderAddress?.id,
         paidAt: new Date(),
+      },
+    })
+
+    await db.product.updateMany({
+      where: {
+        id: {
+          in: order.productIds || [],
+        },
+      },
+      data: {
+        stock: { decrement: 1 },
       },
     })
     return redirect(`order-success/${orderId}`)
