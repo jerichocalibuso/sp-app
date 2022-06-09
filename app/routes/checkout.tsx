@@ -182,7 +182,6 @@ export const action: ActionFunction = async ({ request }) => {
           stock: { decrement: 1 },
         },
       })
-      const session = await getSession(request)
       return redirect(`order-success/${orderId}`, {
         headers: {
           'Set-Cookie': await destroySession(session),
@@ -208,17 +207,10 @@ export const action: ActionFunction = async ({ request }) => {
           paymentOption: 'GCASH',
           addressId: orderAddress?.id,
           sourceId: sourceId,
-          status: Status.PACKAGING,
-          paidAt: new Date(),
         },
       })
 
-      const session = await getSession(request)
-      return redirect(checkoutUrl, {
-        headers: {
-          'Set-Cookie': await destroySession(session),
-        },
-      })
+      return redirect(checkoutUrl)
     } else if (paymentMethod === PaymentMethod.GRABPAY) {
       const res = await createGrabPaySource({
         orderId,
@@ -239,17 +231,10 @@ export const action: ActionFunction = async ({ request }) => {
           paymentOption: 'GRABPAY',
           addressId: orderAddress?.id,
           sourceId: sourceId,
-          status: Status.PACKAGING,
-          paidAt: new Date(),
         },
       })
 
-      const session = await getSession(request)
-      return redirect(checkoutUrl, {
-        headers: {
-          'Set-Cookie': await destroySession(session),
-        },
-      })
+      return redirect(checkoutUrl)
     } else if (paymentMethod === PaymentMethod.PAYMAYA) {
       const res = await payMaya({
         orderId,
@@ -271,16 +256,9 @@ export const action: ActionFunction = async ({ request }) => {
           paymentOption: 'PAYMAYA',
           addressId: orderAddress?.id,
           paymentIntentId: paymentIntentId,
-          status: Status.PACKAGING,
-          paidAt: new Date(),
         },
       })
-      const session = await getSession(request)
-      return redirect(checkoutUrl, {
-        headers: {
-          'Set-Cookie': await destroySession(session),
-        },
-      })
+      return redirect(checkoutUrl)
     } else {
       //COD
       await db.order.update({
@@ -536,7 +514,13 @@ export const loader: LoaderFunction = async ({ request, params }) => {
     orderItems.forEach((orderItem: any) => {
       amount = amount + orderItem.product.price * orderItem.quantity
     })
-    return { currentOrder: { orderItems: orderItems, amount } }
+    const url = new URL(request.url)
+    const paymentFailed = url.searchParams.get('paymentFailed')
+
+    return json({
+      currentOrder: { orderItems: orderItems, amount },
+      paymentError: paymentFailed ? true : false,
+    })
   } else {
     const currentOrder = await db.order.findFirst({
       where: {

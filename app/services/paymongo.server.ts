@@ -183,8 +183,8 @@ const createSource = async (type: string, orderId: string, amount: number) => {
                 : `https://www.camillemeat.shop/order-success/${orderId}`,
             failed:
               process.env.NODE_ENV === 'development'
-                ? `http://localhost:3000//checkout?paymentFailed=true`
-                : `https://www.camillemeat.shop//checkout?paymentFailed=true`,
+                ? `http://localhost:3000/checkout?paymentFailed=true`
+                : `https://www.camillemeat.shop/checkout?paymentFailed=true`,
           },
           type: type,
           currency: 'PHP',
