@@ -1,10 +1,101 @@
-import { Address, Order, OrderItem, Product, Role } from '@prisma/client'
-import { LoaderFunction, redirect } from '@remix-run/node'
-import { useLoaderData, Link } from '@remix-run/react'
-import { authenticator } from '~/services/auth.server'
-
+import { useLoaderData, Link, useActionData } from '@remix-run/react'
+import { LoaderFunction, ActionFunction, redirect } from '@remix-run/node'
+import {
+  Address,
+  Order,
+  OrderItem,
+  Product,
+  Role,
+  Status,
+  User,
+} from '@prisma/client'
 import { db } from '~/utils/db.server'
+import { z } from 'zod'
+import { zfd } from 'zod-form-data'
+import { withZod } from '@remix-validated-form/with-zod'
+import {
+  FieldErrors,
+  ValidatedForm,
+  validationError,
+} from 'remix-validated-form'
+import { Input } from '~/components/Input'
+import { authenticator } from '~/services/auth.server'
+import { StatusSelect } from '~/components/StatusSelect'
+import Autocomplete from '~/components/Autocomplete'
+import { RiderAutocomplete } from '~/components/RiderAutocomplete'
+import { useState } from 'react'
+import DeleteOrderModal from '~/components/DeleteOrderModal'
 
+const baseSchema = z.object({
+  amount: zfd.text(z.string()),
+  status: zfd.text(z.string()),
+})
+
+export const orderValidator = withZod(baseSchema)
+
+interface OrderItemData extends OrderItem {
+  product: Product
+}
+
+interface OrderData extends Order {
+  Address: Address
+  orderItems: OrderItemData[]
+}
+
+export const action: ActionFunction = async ({ request, params }) => {
+  const user = await authenticator.isAuthenticated(request, {
+    failureRedirect: '/signin',
+  })
+  const { role } = user
+  if (role !== Role.ADMIN) {
+    return redirect('/unauthorized')
+  }
+
+  const { orderId } = params
+  const formData = await request.formData()
+
+  if (formData.get('_method') === 'delete') {
+    const orderId = formData.get('orderId') as string
+
+    await db.order.delete({
+      where: { id: orderId },
+    })
+    return redirect('/manage-orders')
+  }
+
+  const riderId = formData.get('riderId') as string
+  const amount = formData.get('amount') as string
+  const status = formData.get('status') as string
+  if (!riderId) {
+    return {
+      error: 'Rider is required',
+    }
+  }
+
+  const order = await db.order.findFirst({
+    where: {
+      id: orderId,
+    },
+  })
+  await db.order.update({
+    where: {
+      id: orderId,
+    },
+    data: {
+      riderId: riderId || order?.riderId,
+      amount: parseInt(amount) || order?.amount,
+      status: (status as Status) || order?.status,
+    },
+  })
+
+  return null
+}
+
+type LoaderData = {
+  order: OrderData
+  error: FieldErrors | null
+  riders: User[] | []
+}
 export const loader: LoaderFunction = async ({ params, request }) => {
   const { orderId } = params
   const user = await authenticator.isAuthenticated(request)
@@ -13,18 +104,16 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     return redirect('/signin')
   }
 
-  if (user?.role !== Role.CUSTOMER) {
+  if (user?.role !== Role.ADMIN) {
     return redirect('/unauthorized')
   }
 
   const order = await db.order.findFirst({
     where: {
       id: orderId,
-      userId: user?.id,
     },
     include: {
       Address: true,
-
       orderItems: {
         include: {
           product: true,
@@ -33,43 +122,98 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     },
   })
 
-  if (!order) redirect('/cart')
+  const riders = await db.user.findMany({
+    where: {
+      role: Role.RIDER,
+    },
+  })
 
-  return { order }
+  if (!order) redirect('/manage-orders')
+
+  return { order, riders }
 }
 
-interface OrderItemData extends OrderItem {
-  product: Product
-}
+export default function Example() {
+  const loaderData = useLoaderData<LoaderData>()
+  const { order, riders } = loaderData
+  const actionData = useActionData()
+  const [confirmingDeletion, setConfirmingDeletion] = useState(false)
 
-interface OrderData extends Order {
-  orderItems: OrderItemData[]
-  Address: Address
-}
-interface LoaderData {
-  order: OrderData
-}
-
-export default function OrderDetailsPage() {
-  const { order } = useLoaderData<LoaderData>()
   return (
     <div className='bg-white'>
+      <DeleteOrderModal
+        {...{ confirmingDeletion, setConfirmingDeletion }}
+        orderId={order?.id || ''}
+      />
       <div className='mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8'>
         <div className='max-w-xl'>
           <h1 className='mt-2 text-4xl font-extrabold tracking-tight sm:text-5xl'>
-            Order details
+            Edit order
           </h1>
-          <p className='mt-2 text-base text-gray-500'>
-            {new Date(order?.paidAt || '')?.toLocaleDateString('en-us', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            }) || ''}
-          </p>
-
-          <dl className='mt-12 text-sm font-medium'>
+          <dl className='mt-6 mb-4 text-sm font-medium'>
+            <h2 className='text-lg text-gray-900'>Editable details</h2>
+          </dl>
+          <ValidatedForm
+            method='post'
+            validator={orderValidator}
+            className='space-y-4'
+          >
+            <RiderAutocomplete
+              riderId={order.riderId}
+              riders={riders}
+              name='riderId'
+              label='Rider name'
+              error={actionData?.error || ''}
+              className={`w-full ${
+                loaderData?.error?.message && 'border-red-500'
+              }`}
+            />
+            <Input
+              name='amount'
+              label='Amount'
+              type='text'
+              defaultValue={order.amount?.toString()}
+              className={`w-full ${
+                loaderData?.error?.message && 'border-red-500'
+              }`}
+            />
+            <StatusSelect
+              name='status'
+              label='Status'
+              value={order.status}
+              className={`${loaderData?.error?.message && 'border-red-500'}`}
+            />
+            <div className='flex justify-end'>
+              <button
+                onClick={() => setConfirmingDeletion(true)}
+                className='mr-2 inline-flex w-full justify-end rounded-md border border-transparent border-red-600 px-4 py-2 text-base font-medium text-red-500 shadow-sm hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:w-auto sm:text-sm  '
+              >
+                Delete
+              </button>
+              <button
+                type='submit'
+                className='inline-flex w-full justify-end rounded-md border border-transparent bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:w-auto sm:text-sm'
+              >
+                Submit
+              </button>
+            </div>
+          </ValidatedForm>
+          <dl className='mt-6 text-sm font-medium'>
+            <h2 className='text-lg text-gray-900'>Other details</h2>
+          </dl>
+          <dl className='mt-6 text-sm font-medium'>
             <dt className='text-gray-900'>Order ID</dt>
             <dd className='mt-2 text-red-500'>{order?.id || ''}</dd>
+          </dl>
+          <dl className='mt-6 text-sm font-medium'>
+            <dt className='text-gray-900'>Paid at</dt>
+            <dd className='mt-2 text-red-500'>
+              {new Date(order?.paidAt || '')?.toLocaleDateString('en-us', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              }) || ''}
+            </dd>
           </dl>
           <dl className='mt-6 text-sm font-medium'>
             <dt className='text-gray-900'>Order status</dt>

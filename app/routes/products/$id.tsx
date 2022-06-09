@@ -66,30 +66,67 @@ export const action: ActionFunction = async ({ request, params }) => {
         userId: user?.id,
         status: 'IN_CART',
       },
+      include: {
+        orderItems: true,
+      },
     })
 
     if (currentOrder) {
-      const res = await db.order.update({
-        where: {
-          id: currentOrder?.id,
-        },
-        data: {
-          amount: currentOrder.amount + product.price,
-          productIds: {
-            push: [productId ? productId : ''],
+      const existingProduct = currentOrder.orderItems.find(
+        (p) => p.productId === product.id
+      )
+      if (existingProduct) {
+        await db.orderItem.update({
+          where: {
+            id: existingProduct.id,
           },
+          data: {
+            quantity: {
+              increment: 1,
+            },
+          },
+        })
+      } else {
+        await db.orderItem.create({
+          data: {
+            productId: product.id,
+            quantity: 1,
+            orderId: currentOrder.id,
+          },
+        })
+      }
+      const updatedOrder = await db.order.update({
+        where: { id: currentOrder.id },
+        data: {
+          amount: { increment: product.price },
         },
+        include: { orderItems: true },
       })
-      return res
+
+      return { order: updatedOrder }
     } else {
-      return await db.order.create({
+      const order = await db.order.create({
         data: {
           amount: product.price,
-          productIds: [product.id],
           status: Status.IN_CART,
           userId: user?.id,
         },
       })
+
+      await db.orderItem.create({
+        data: {
+          orderId: order.id,
+          productId: product.id,
+          quantity: 1,
+        },
+      })
+
+      const updatedOrder = await db.order.findFirst({
+        where: { id: order.id },
+        include: { orderItems: true },
+      })
+
+      return { order: updatedOrder }
     }
   }
 }

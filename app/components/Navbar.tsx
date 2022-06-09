@@ -13,6 +13,7 @@ import { ArrowRightIcon } from '@heroicons/react/solid'
 import AccountDropdown from './AccountDropdown'
 import { authenticator } from '~/services/auth.server'
 import { db } from '~/utils/db.server'
+import { getSession } from '~/services/session.server'
 
 const navigation = {
   pages: [
@@ -30,12 +31,19 @@ interface OrderData extends Order {
 type NavbarProps = {
   user: User | null
   currentOrder: OrderData | null
+  localOrderItems: any[] | []
 }
 
-export default function Navbar({ user, currentOrder }: NavbarProps) {
+export default function Navbar({
+  user,
+  currentOrder,
+  localOrderItems,
+}: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   let orderItemCount = 0
   currentOrder?.orderItems.forEach((o) => (orderItemCount += o.quantity))
+  let localOrderItemCount = 0
+  localOrderItems?.forEach((o) => (localOrderItemCount += o.quantity))
   return (
     <>
       <Transition.Root show={mobileMenuOpen} as={Fragment}>
@@ -210,6 +218,20 @@ export default function Navbar({ user, currentOrder }: NavbarProps) {
                             />
                             <span className='ml-2 text-sm font-medium text-gray-700 group-hover:text-red-600'>
                               {orderItemCount}
+                            </span>
+                            <span className='sr-only'>
+                              items in cart, view cart
+                            </span>
+                          </Link>
+                        ) : null}
+                        {!user?.role ? (
+                          <Link to='/cart' className='group  flex items-center'>
+                            <ShoppingCartIcon
+                              className='h-6 w-6 flex-shrink-0 text-gray-700 group-hover:text-red-600'
+                              aria-hidden='true'
+                            />
+                            <span className='ml-2 text-sm font-medium text-gray-700 group-hover:text-red-600'>
+                              {localOrderItemCount || 0}
                             </span>
                             <span className='sr-only'>
                               items in cart, view cart

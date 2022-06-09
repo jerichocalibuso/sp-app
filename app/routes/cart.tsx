@@ -15,7 +15,7 @@
   ```
 */
 import { CheckCircleIcon, QuestionMarkCircleIcon } from '@heroicons/react/solid'
-import { Role, Status } from '@prisma/client'
+import { OrderItem, Role, Status } from '@prisma/client'
 import {
   ActionFunction,
   Link,
@@ -27,6 +27,7 @@ import { validationError } from 'remix-validated-form'
 import invariant from 'tiny-invariant'
 import { Quantity } from '~/components/Quantity'
 import { authenticator } from '~/services/auth.server'
+import { commitSession, getSession } from '~/services/guest.server'
 import { db } from '~/utils/db.server'
 import { Product } from './products'
 
@@ -34,10 +35,6 @@ export const action: ActionFunction = async ({ request }) => {
   const user = await authenticator.isAuthenticated(request)
   if (user?.role === Role.RIDER || user?.role === Role.ADMIN) {
     return redirect('/unauthorized')
-  }
-
-  if (!user?.role) {
-    return redirect('/signin')
   }
 
   const formData = await request.formData()
@@ -134,14 +131,41 @@ export const action: ActionFunction = async ({ request }) => {
         }
       }
     }
+  } else {
+    const session = await getSession(request)
+    const orderItems = session.get('orderItems') || []
+    const existingProduct = orderItems.find(
+      (orderItem: OrderItem) => orderItem.productId === product.id
+    )
+    const existingProductIndex = orderItems.findIndex(
+      (orderItem: OrderItem) => orderItem.productId === product.id
+    )
+
+    if (existingProduct) {
+      orderItems[existingProductIndex] = {
+        ...existingProduct,
+        quantity:
+          _method === 'ADD'
+            ? existingProduct.quantity + 1
+            : existingProduct.quantity - 1,
+      }
+
+      if (orderItems[existingProductIndex].quantity === 0) {
+        orderItems.splice(existingProductIndex, 1)
+      }
+    }
+    session.set('orderItems', orderItems)
+    return redirect('/cart', {
+      headers: {
+        'Set-Cookie': await commitSession(session),
+      },
+    })
   }
   return null
 }
 export const loader: LoaderFunction = async ({ request }) => {
-  const user = await authenticator.isAuthenticated(request, {
-    failureRedirect: '/signin',
-  })
-  if (user?.role !== Role.CUSTOMER) {
+  const user = await authenticator.isAuthenticated(request)
+  if (user?.role === Role.RIDER || user?.role === Role.ADMIN) {
     redirect('/unauthorized')
   }
 
@@ -161,8 +185,15 @@ export const loader: LoaderFunction = async ({ request }) => {
     })
 
     return { currentOrder }
+  } else {
+    const session = await getSession(request)
+    const orderItems = session.get('orderItems') || []
+    let amount = 0
+    orderItems.forEach((orderItem: any) => {
+      amount = amount + orderItem.product.price * orderItem.quantity
+    })
+    return { currentOrder: { orderItems: orderItems, amount } }
   }
-  return null
 }
 
 export default function CartPage() {

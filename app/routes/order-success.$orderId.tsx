@@ -1,4 +1,11 @@
-import { Order, Product, Role, Status } from '@prisma/client'
+import {
+  Address,
+  Order,
+  OrderItem,
+  Product,
+  Role,
+  Status,
+} from '@prisma/client'
 import { authenticator } from '~/services/auth.server'
 import { LoaderFunction, redirect } from '@remix-run/node'
 
@@ -11,68 +18,47 @@ import { db } from '~/utils/db.server'
 import { Link, useLoaderData } from '@remix-run/react'
 
 /* This example requires Tailwind CSS v2.0+ */
-const products = [
-  {
-    id: 1,
-    name: 'Cold Brew Bottle',
-    description:
-      'This glass bottle comes with a mesh insert for steeping tea or cold-brewing coffee. Pour from any angle and remove the top for easy cleaning.',
-    href: '#',
-    quantity: 1,
-    price: '$32.00',
-    imageSrc:
-      'https://tailwindui.com/img/ecommerce-images/confirmation-page-05-product-01.jpg',
-    imageAlt: 'Glass bottle with black plastic pour top and mesh insert.',
-  },
-  {
-    id: 1,
-    name: 'Cold Brew Bottle',
-    description:
-      'This glass bottle comes with a mesh insert for steeping tea or cold-brewing coffee. Pour from any angle and remove the top for easy cleaning.',
-    href: '#',
-    quantity: 1,
-    price: '$32.00',
-    imageSrc:
-      'https://tailwindui.com/img/ecommerce-images/confirmation-page-05-product-01.jpg',
-    imageAlt: 'Glass bottle with black plastic pour top and mesh insert.',
-  },
-  {
-    id: 1,
-    name: 'Cold Brew Bottle',
-    description:
-      'This glass bottle comes with a mesh insert for steeping tea or cold-brewing coffee. Pour from any angle and remove the top for easy cleaning.',
-    href: '#',
-    quantity: 1,
-    price: '$32.00',
-    imageSrc:
-      'https://tailwindui.com/img/ecommerce-images/confirmation-page-05-product-01.jpg',
-    imageAlt: 'Glass bottle with black plastic pour top and mesh insert.',
-  },
-]
 
+interface OrderItemData extends OrderItem {
+  product: Product
+}
+
+interface OrderData extends Order {
+  Address: Address
+  orderItems: OrderItemData[]
+}
+interface LoaderData {
+  order: OrderData
+}
 export const loader: LoaderFunction = async ({ params, request }) => {
   const { orderId } = params
   const user = await authenticator.isAuthenticated(request)
 
-  if (!user?.role) {
-    return redirect('/signin')
-  }
-
-  if (user?.role !== Role.CUSTOMER) {
+  if (user?.role === Role.ADMIN || user?.role === Role.RIDER) {
     return redirect('/unauthorized')
   }
 
-  const currentOrder = await db.order.findFirst({
+  const order = await db.order.findFirst({
     where: {
       id: orderId,
       userId: user?.id,
     },
+    include: {
+      Address: true,
+      orderItems: {
+        include: {
+          product: true,
+        },
+      },
+    },
   })
 
-  if (!currentOrder) redirect('/cart')
+  if (!order) redirect('/cart')
 
-  if (currentOrder?.sourceId && !currentOrder?.paidAt) {
-    const res = await retrieveSource(currentOrder?.sourceId)
+  const productIds = order?.orderItems.map((orderItem) => orderItem.productId)
+
+  if (order?.sourceId && !order?.paidAt) {
+    const res = await retrieveSource(order?.sourceId)
     if (!res.status) {
       return redirect('/cart')
     }
@@ -81,8 +67,8 @@ export const loader: LoaderFunction = async ({ params, request }) => {
       return redirect(res.checkoutUrl)
     } else if (res.status === 'chargeable') {
       const paymentReference = await createPayment(
-        currentOrder.sourceId,
-        currentOrder?.amount
+        order.sourceId,
+        order?.amount
       )
       await db.order.update({
         where: {
@@ -94,10 +80,11 @@ export const loader: LoaderFunction = async ({ params, request }) => {
           paidAt: new Date(),
         },
       })
+
       await db.product.updateMany({
         where: {
           id: {
-            in: currentOrder.productIds || [],
+            in: productIds || [],
           },
         },
         data: {
@@ -108,8 +95,8 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     }
   }
 
-  if (currentOrder?.paymentIntentId && !currentOrder?.paidAt) {
-    const res = await retrievePaymentIntent(currentOrder?.paymentIntentId)
+  if (order?.paymentIntentId && !order?.paidAt) {
+    const res = await retrievePaymentIntent(order?.paymentIntentId)
 
     if (res.status === 'paid') {
       const updatedOrder = await db.order.update({
@@ -122,10 +109,11 @@ export const loader: LoaderFunction = async ({ params, request }) => {
           paidAt: new Date(),
         },
       })
+
       await db.product.updateMany({
         where: {
           id: {
-            in: updatedOrder.productIds || [],
+            in: productIds || [],
           },
         },
         data: {
@@ -138,18 +126,11 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     }
   }
 
-  const products = await db.product.findMany({
-    where: {
-      id: {
-        in: currentOrder?.productIds || [],
-      },
-    },
-  })
-  return { currentOrder, products }
+  return { order }
 }
 
 export default function Example() {
-  const { currentOrder, products } = useLoaderData()
+  const { order } = useLoaderData<LoaderData>()
   return (
     <div className='bg-white'>
       <div className='mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8'>
@@ -166,11 +147,11 @@ export default function Example() {
 
           <dl className='mt-12 text-sm font-medium'>
             <dt className='text-gray-900'>Order ID</dt>
-            <dd className='mt-2 text-red-500'>{currentOrder?.id || ''}</dd>
+            <dd className='mt-2 text-red-500'>{order?.id || ''}</dd>
           </dl>
           <dl className='mt-6 text-sm font-medium'>
             <dt className='text-gray-900'>Order status</dt>
-            <dd className='mt-2 text-red-500'>{currentOrder?.status || ''}</dd>
+            <dd className='mt-2 text-red-500'>{order?.status || ''}</dd>
           </dl>
         </div>
 
@@ -178,16 +159,14 @@ export default function Example() {
           <h2 className='sr-only'>Your order</h2>
 
           <h3 className='sr-only'>Items</h3>
-          {products.map((product: Product) => {
-            const quantity = currentOrder?.productIds.filter((id: string) => {
-              return product.id?.toString() === id
-            })?.length
+          {order.orderItems.map((orderItem: OrderItemData) => {
+            const { product } = orderItem
             return (
               <div
-                key={product.id}
+                key={orderItem.id}
                 className='flex space-x-6 border-b border-gray-200 py-10'
               >
-                <Link to={`/products/${product?.id}`}>
+                <Link to={`/products/${orderItem?.productId}`}>
                   <div className='h-20 w-20 flex-none rounded-lg bg-gray-100 object-cover object-center sm:h-40 sm:w-40'>
                     <img loading='lazy' src={product?.imageUrl || ''} />
                   </div>
@@ -208,7 +187,9 @@ export default function Example() {
                     <dl className='flex space-x-4 divide-x divide-gray-200 text-sm sm:space-x-6'>
                       <div className='flex'>
                         <dt className='font-medium text-gray-900'>Quantity</dt>
-                        <dd className='ml-2 text-gray-700'>{quantity}</dd>
+                        <dd className='ml-2 text-gray-700'>
+                          {orderItem.quantity}
+                        </dd>
                       </div>
                       <div className='flex pl-4 sm:pl-6'>
                         <dt className='font-medium text-gray-900'>Price</dt>
@@ -232,10 +213,10 @@ export default function Example() {
                 </dt>
                 <dd className='mt-2 text-gray-700'>
                   <address className='not-italic'>
-                    <span className='block'>Address</span>
-                    <span className='block'>City, Cavite</span>
-                    <span className='block'>Contact Person</span>
-                    <span className='block'>09121231234</span>
+                    <span className='block'>{order.Address.address}</span>
+                    <span className='block'>{order.Address.city}, Cavite</span>
+                    <span className='block'>{order.Address.contactPerson}</span>
+                    <span className='block'>{order.Address.phoneNumber}</span>
                   </address>
                 </dd>
               </div>
@@ -243,7 +224,7 @@ export default function Example() {
                 <dt className='font-medium text-gray-900'>Payment method</dt>
                 <dd className='mt-2 text-gray-700'>
                   <div className='not-italic'>
-                    <span className='block'>Credit / debit card</span>
+                    <span className='block'>{order.paymentOption}</span>
                   </div>
                 </dd>
               </div>

@@ -22,6 +22,7 @@ import nProgressStyles from 'nprogress/nprogress.css'
 import { useNProgress } from './hooks/useNProgress'
 import { Role } from '@prisma/client'
 import { db } from './utils/db.server'
+import { commitSession, getSession } from './services/guest.server'
 
 export function links() {
   return [
@@ -56,11 +57,17 @@ export const loader: LoaderFunction = async ({ request }) => {
     return json({ user, currentOrder })
   }
 
+  if (!user?.id) {
+    const session = await getSession(request)
+    const localOrderItems = session.get('orderItems')
+    return { localOrderItems }
+  }
+
   return json({ user })
 }
 
 export default function App() {
-  const { user, currentOrder } = useLoaderData()
+  const { user, currentOrder, localOrderItems } = useLoaderData()
 
   useNProgress()
 
@@ -74,7 +81,7 @@ export default function App() {
       </head>
       <body>
         <div>
-          <Navbar {...{ user, currentOrder }} />
+          <Navbar {...{ user, currentOrder, localOrderItems }} />
           <Outlet />
           <Footer />
         </div>

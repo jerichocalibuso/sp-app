@@ -16,7 +16,7 @@ import {
   useLoaderData,
 } from 'remix'
 import { authenticator } from '~/services/auth.server'
-import { Address, OrderItem, Role, Status } from '@prisma/client'
+import { Address, Order, OrderItem, Role, Status } from '@prisma/client'
 import { db } from '~/utils/db.server'
 import { Product } from './products'
 import { z } from 'zod'
@@ -30,6 +30,8 @@ import {
   createGrabPaySource,
   payMaya,
 } from '~/services/paymongo.server'
+import { destroySession, getSession } from '~/services/guest.server'
+import { v4 as uuidv4 } from 'uuid'
 
 const baseSchema = z.object({
   contactPerson: zfd.text(z.string().nonempty()),
@@ -68,12 +70,8 @@ function classNames(...classes: string[]) {
 export const action: ActionFunction = async ({ request }) => {
   const user = await authenticator.isAuthenticated(request)
 
-  if (user?.role !== Role.CUSTOMER) {
+  if (user?.role === Role.ADMIN || user?.role === Role.RIDER) {
     return redirect('/unauthorized')
-  }
-
-  if (!user?.id) {
-    return redirect('/signin')
   }
 
   const formData = await request.formData()
@@ -81,30 +79,32 @@ export const action: ActionFunction = async ({ request }) => {
   const orderId = formData.get('orderId')?.toString() || ''
   const paymentMethod = formData.get('paymentMethod[id]')?.toString() || ''
 
-  if (!orderId) {
-    return redirect('/cart')
-  }
+  if (!user?.id) {
+    const session = await getSession(request)
+    const orderItems = session.get('orderItems') || []
+    let amount = 0
+    orderItems.forEach((orderItem: any) => {
+      amount = amount + orderItem.product.price * orderItem.quantity
+    })
 
-  const order = await db.order.findFirst({
-    where: {
-      id: orderId,
-      status: 'IN_CART',
-    },
-    include: {
-      orderItems: true,
-    },
-  })
+    const order = await db.order.create({
+      data: {
+        amount,
+        status: Status.PACKAGING,
+      },
+    })
 
-  if (!order) {
-    return redirect('/cart')
-  }
+    const orderId = order.id
+    const orderItemInputs = orderItems.map((orderItem: any) => ({
+      orderId,
+      productId: orderItem.productId,
+      quantity: orderItem.quantity,
+    }))
 
-  if (!order?.id) {
-    return redirect('/cart')
-  }
+    await db.orderItem.createMany({
+      data: orderItemInputs,
+    })
 
-  let orderAddress: Address | null = null
-  if (newAddress) {
     const nickname = formData.get('addressNickname')?.toString() || 'Home'
     if (!nickname)
       return validationError({
@@ -117,235 +117,470 @@ export const action: ActionFunction = async ({ request }) => {
     const address = formData.get('address')?.toString() || ''
     const contactPerson = formData.get('contactPerson')?.toString() || ''
 
-    orderAddress = await db.address.create({
+    const orderAddress = await db.address.create({
       data: {
         nickname,
         phoneNumber,
         city,
         address,
         contactPerson,
-        userId: user.id,
+        userId: user?.id || null,
       },
     })
-  } else {
-    const addressId = formData.get('selectedAddressId')?.toString()
-    if (addressId) {
-      orderAddress = await db.address.findFirst({
+
+    if (paymentMethod === PaymentMethod.CARD) {
+      const cardNumber = formData.get('cardNumber')?.toString() || ''
+      const nameOnCard = formData.get('nameOnCard')?.toString() || ''
+      const expiration = formData.get('expiration')?.toString() || ''
+      const cvc = formData.get('cvc')?.toString() || ''
+
+      if (!cardNumber || !nameOnCard || !expiration || !cvc) {
+        return validationError({
+          fieldErrors: {
+            cardNumber: !cardNumber ? 'Required' : '',
+            nameOnCard: !nameOnCard ? 'Required' : '',
+            expiration: !expiration ? 'Required' : '',
+            cvc: !cvc ? 'Required' : '',
+          },
+        })
+      }
+
+      const res = await payCard({
+        cardNumber,
+        nameOnCard,
+        expiration,
+        cvc,
+        amount: order?.amount || 100,
+      })
+
+      if (res.errors) {
+        return json({
+          paymentErrors: res.errors,
+        })
+      }
+
+      await db.order.update({
         where: {
-          id: addressId,
+          id: orderId,
+        },
+        data: {
+          status: Status.PACKAGING,
+          paymentOption: 'CARD',
+          addressId: orderAddress?.id,
+          paymentReference: res.paymentReference,
+          paidAt: new Date(),
+        },
+      })
+
+      await db.product.updateMany({
+        where: {
+          id: {
+            in: orderItemInputs?.map((o: any) => o.productId) || [],
+          },
+        },
+        data: {
+          stock: { decrement: 1 },
+        },
+      })
+      const session = await getSession(request)
+      return redirect(`order-success/${orderId}`, {
+        headers: {
+          'Set-Cookie': await destroySession(session),
+        },
+      })
+    } else if (paymentMethod === PaymentMethod.GCASH) {
+      const res = await createGCashSource({
+        orderId,
+        amount: order?.amount || 100,
+      })
+      if (res.errors) {
+        return json({
+          paymentErrors: res.errors,
+        })
+      }
+
+      const { sourceId, checkoutUrl } = res
+      await db.order.update({
+        where: {
+          id: orderId,
+        },
+        data: {
+          paymentOption: 'GCASH',
+          addressId: orderAddress?.id,
+          sourceId: sourceId,
+          status: Status.PACKAGING,
+          paidAt: new Date(),
+        },
+      })
+
+      const session = await getSession(request)
+      return redirect(checkoutUrl, {
+        headers: {
+          'Set-Cookie': await destroySession(session),
+        },
+      })
+    } else if (paymentMethod === PaymentMethod.GRABPAY) {
+      const res = await createGrabPaySource({
+        orderId,
+        amount: order?.amount || 0,
+      })
+      if (res.errors) {
+        return json({
+          paymentErrors: res.errors,
+        })
+      }
+
+      const { sourceId, checkoutUrl } = res
+      await db.order.update({
+        where: {
+          id: orderId,
+        },
+        data: {
+          paymentOption: 'GRABPAY',
+          addressId: orderAddress?.id,
+          sourceId: sourceId,
+          status: Status.PACKAGING,
+          paidAt: new Date(),
+        },
+      })
+
+      const session = await getSession(request)
+      return redirect(checkoutUrl, {
+        headers: {
+          'Set-Cookie': await destroySession(session),
+        },
+      })
+    } else if (paymentMethod === PaymentMethod.PAYMAYA) {
+      const res = await payMaya({
+        orderId,
+        amount: order?.amount || 0,
+      })
+
+      if (res.errors) {
+        return json({
+          paymentErrors: res.errors,
+        })
+      }
+
+      const { paymentIntentId, checkoutUrl } = res
+      await db.order.update({
+        where: {
+          id: orderId,
+        },
+        data: {
+          paymentOption: 'PAYMAYA',
+          addressId: orderAddress?.id,
+          paymentIntentId: paymentIntentId,
+          status: Status.PACKAGING,
+          paidAt: new Date(),
+        },
+      })
+      const session = await getSession(request)
+      return redirect(checkoutUrl, {
+        headers: {
+          'Set-Cookie': await destroySession(session),
+        },
+      })
+    } else {
+      //COD
+      await db.order.update({
+        where: {
+          id: orderId,
+        },
+        data: {
+          status: Status.PACKAGING,
+          paymentOption: 'COD',
+          addressId: orderAddress?.id,
+          paidAt: new Date(),
+        },
+      })
+
+      await db.product.updateMany({
+        where: {
+          id: {
+            in: orderItemInputs?.map((o: any) => o.productId) || [],
+          },
+        },
+        data: {
+          stock: { decrement: 1 },
+        },
+      })
+      const session = await getSession(request)
+
+      return redirect(`order-success/${orderId}`, {
+        headers: {
+          'Set-Cookie': await destroySession(session),
         },
       })
     }
-  }
-
-  if (paymentMethod === PaymentMethod.CARD) {
-    const cardNumber = formData.get('cardNumber')?.toString() || ''
-    const nameOnCard = formData.get('nameOnCard')?.toString() || ''
-    const expiration = formData.get('expiration')?.toString() || ''
-    const cvc = formData.get('cvc')?.toString() || ''
-
-    if (!cardNumber || !nameOnCard || !expiration || !cvc) {
-      return validationError({
-        fieldErrors: {
-          cardNumber: !cardNumber ? 'Required' : '',
-          nameOnCard: !nameOnCard ? 'Required' : '',
-          expiration: !expiration ? 'Required' : '',
-          cvc: !cvc ? 'Required' : '',
-        },
-      })
-    }
-
-    const res = await payCard({
-      cardNumber,
-      nameOnCard,
-      expiration,
-      cvc,
-      amount: order.amount,
-    })
-
-    if (res.errors) {
-      return json({
-        paymentErrors: res.errors,
-      })
-    }
-
-    await db.order.update({
-      where: {
-        id: orderId,
-      },
-      data: {
-        status: Status.PACKAGING,
-        paymentOption: 'CARD',
-        addressId: orderAddress?.id,
-        paymentReference: res.paymentReference,
-        paidAt: new Date(),
-      },
-    })
-
-    await db.product.updateMany({
-      where: {
-        id: {
-          in: order.orderItems.map((o) => o.productId) || [],
-        },
-      },
-      data: {
-        stock: { decrement: 1 },
-      },
-    })
-
-    return redirect(`order-success/${orderId}`)
-  } else if (paymentMethod === PaymentMethod.GCASH) {
-    const res = await createGCashSource({
-      orderId,
-      amount: order?.amount || 0,
-    })
-    if (res.errors) {
-      return json({
-        paymentErrors: res.errors,
-      })
-    }
-
-    const { sourceId, checkoutUrl } = res
-    await db.order.update({
-      where: {
-        id: orderId,
-      },
-      data: {
-        paymentOption: 'GCASH',
-        addressId: orderAddress?.id,
-        sourceId: sourceId,
-      },
-    })
-
-    return redirect(checkoutUrl)
-  } else if (paymentMethod === PaymentMethod.GRABPAY) {
-    const res = await createGrabPaySource({
-      orderId,
-      amount: order?.amount || 0,
-    })
-    if (res.errors) {
-      return json({
-        paymentErrors: res.errors,
-      })
-    }
-
-    const { sourceId, checkoutUrl } = res
-    await db.order.update({
-      where: {
-        id: orderId,
-      },
-      data: {
-        paymentOption: 'GRABPAY',
-        addressId: orderAddress?.id,
-        sourceId: sourceId,
-      },
-    })
-
-    return redirect(checkoutUrl)
-  } else if (paymentMethod === PaymentMethod.PAYMAYA) {
-    const res = await payMaya({
-      orderId,
-      amount: order?.amount || 0,
-    })
-
-    if (res.errors) {
-      return json({
-        paymentErrors: res.errors,
-      })
-    }
-
-    const { paymentIntentId, checkoutUrl } = res
-    await db.order.update({
-      where: {
-        id: orderId,
-      },
-      data: {
-        paymentOption: 'PAYMAYA',
-        addressId: orderAddress?.id,
-        paymentIntentId: paymentIntentId,
-      },
-    })
-    return redirect(checkoutUrl)
   } else {
-    //COD
-    await db.order.update({
+    const order = await db.order.findFirst({
       where: {
         id: orderId,
+        status: 'IN_CART',
       },
-      data: {
-        status: Status.PACKAGING,
-        paymentOption: 'COD',
-        addressId: orderAddress?.id,
-        paidAt: new Date(),
+      include: {
+        orderItems: true,
       },
     })
 
-    await db.product.updateMany({
-      where: {
-        id: {
-          in: order.orderItems.map((o) => o.productId) || [],
+    let orderAddress: Address | null = null
+    if (newAddress) {
+      const nickname = formData.get('addressNickname')?.toString() || 'Home'
+      if (!nickname)
+        return validationError({
+          fieldErrors: {
+            nickname: 'Required',
+          },
+        })
+      const phoneNumber = formData.get('phoneNumber')?.toString() || ''
+      const city = formData.get('city')?.toString() || ''
+      const address = formData.get('address')?.toString() || ''
+      const contactPerson = formData.get('contactPerson')?.toString() || ''
+
+      orderAddress = await db.address.create({
+        data: {
+          nickname,
+          phoneNumber,
+          city,
+          address,
+          contactPerson,
+          userId: user?.id || null,
         },
-      },
-      data: {
-        stock: { decrement: 1 },
-      },
-    })
-    return redirect(`order-success/${orderId}`)
+      })
+    } else {
+      const addressId = formData.get('selectedAddressId')?.toString()
+      if (addressId) {
+        orderAddress = await db.address.findFirst({
+          where: {
+            id: addressId,
+          },
+        })
+      }
+    }
+
+    if (paymentMethod === PaymentMethod.CARD) {
+      const cardNumber = formData.get('cardNumber')?.toString() || ''
+      const nameOnCard = formData.get('nameOnCard')?.toString() || ''
+      const expiration = formData.get('expiration')?.toString() || ''
+      const cvc = formData.get('cvc')?.toString() || ''
+
+      if (!cardNumber || !nameOnCard || !expiration || !cvc) {
+        return validationError({
+          fieldErrors: {
+            cardNumber: !cardNumber ? 'Required' : '',
+            nameOnCard: !nameOnCard ? 'Required' : '',
+            expiration: !expiration ? 'Required' : '',
+            cvc: !cvc ? 'Required' : '',
+          },
+        })
+      }
+
+      const res = await payCard({
+        cardNumber,
+        nameOnCard,
+        expiration,
+        cvc,
+        amount: order?.amount || 100,
+      })
+
+      if (res.errors) {
+        return json({
+          paymentErrors: res.errors,
+        })
+      }
+
+      await db.order.update({
+        where: {
+          id: orderId,
+        },
+        data: {
+          status: Status.PACKAGING,
+          paymentOption: 'CARD',
+          addressId: orderAddress?.id,
+          paymentReference: res.paymentReference,
+          paidAt: new Date(),
+        },
+      })
+
+      await db.product.updateMany({
+        where: {
+          id: {
+            in: order?.orderItems?.map((o) => o.productId) || [],
+          },
+        },
+        data: {
+          stock: { decrement: 1 },
+        },
+      })
+
+      return redirect(`order-success/${orderId}`)
+    } else if (paymentMethod === PaymentMethod.GCASH) {
+      const res = await createGCashSource({
+        orderId,
+        amount: order?.amount || 100,
+      })
+      if (res.errors) {
+        return json({
+          paymentErrors: res.errors,
+        })
+      }
+
+      const { sourceId, checkoutUrl } = res
+      await db.order.update({
+        where: {
+          id: orderId,
+        },
+        data: {
+          paymentOption: 'GCASH',
+          addressId: orderAddress?.id,
+          sourceId: sourceId,
+          status: Status.PACKAGING,
+          paidAt: new Date(),
+        },
+      })
+
+      return redirect(checkoutUrl)
+    } else if (paymentMethod === PaymentMethod.GRABPAY) {
+      const res = await createGrabPaySource({
+        orderId,
+        amount: order?.amount || 0,
+      })
+      if (res.errors) {
+        return json({
+          paymentErrors: res.errors,
+        })
+      }
+
+      const { sourceId, checkoutUrl } = res
+      await db.order.update({
+        where: {
+          id: orderId,
+        },
+        data: {
+          paymentOption: 'GRABPAY',
+          addressId: orderAddress?.id,
+          sourceId: sourceId,
+          status: Status.PACKAGING,
+          paidAt: new Date(),
+        },
+      })
+
+      return redirect(checkoutUrl)
+    } else if (paymentMethod === PaymentMethod.PAYMAYA) {
+      const res = await payMaya({
+        orderId,
+        amount: order?.amount || 0,
+      })
+
+      if (res.errors) {
+        return json({
+          paymentErrors: res.errors,
+        })
+      }
+
+      const { paymentIntentId, checkoutUrl } = res
+      await db.order.update({
+        where: {
+          id: orderId,
+        },
+        data: {
+          paymentOption: 'PAYMAYA',
+          addressId: orderAddress?.id,
+          paymentIntentId: paymentIntentId,
+          status: Status.PACKAGING,
+          paidAt: new Date(),
+        },
+      })
+      return redirect(checkoutUrl)
+    } else {
+      //COD
+      await db.order.update({
+        where: {
+          id: orderId,
+        },
+        data: {
+          status: Status.PACKAGING,
+          paymentOption: 'COD',
+          addressId: orderAddress?.id,
+          paidAt: new Date(),
+        },
+      })
+
+      await db.product.updateMany({
+        where: {
+          id: {
+            in: order?.orderItems?.map((o) => o.productId) || [],
+          },
+        },
+        data: {
+          stock: { decrement: 1 },
+        },
+      })
+      return redirect(`order-success/${orderId}`)
+    }
   }
 }
 
 export const loader: LoaderFunction = async ({ request, params }) => {
   const user = await authenticator.isAuthenticated(request)
 
-  if (!user?.role) {
-    return redirect('/signin')
-  }
-
-  if (user?.role !== Role.CUSTOMER) {
+  if (user?.role === Role.ADMIN || user?.role === Role.RIDER) {
     return redirect('/unauthorized')
   }
 
-  const currentOrder = await db.order.findFirst({
-    where: {
-      userId: user?.id,
-      status: 'IN_CART',
-    },
-    include: {
-      orderItems: {
-        include: {
-          product: true,
+  if (!user?.id) {
+    const session = await getSession(request)
+    const orderItems = session.get('orderItems') || []
+    let amount = 0
+    orderItems.forEach((orderItem: any) => {
+      amount = amount + orderItem.product.price * orderItem.quantity
+    })
+    return { currentOrder: { orderItems: orderItems, amount } }
+  } else {
+    const currentOrder = await db.order.findFirst({
+      where: {
+        userId: user?.id,
+        status: 'IN_CART',
+      },
+      include: {
+        orderItems: {
+          include: {
+            product: true,
+          },
         },
       },
-    },
-  })
+    })
 
-  if (!currentOrder) redirect('/')
+    if (!currentOrder) redirect('/')
 
-  const savedAddresses = await db.address.findMany({
-    where: {
-      userId: user.id,
-    },
-  })
+    const savedAddresses = await db.address.findMany({
+      where: {
+        userId: user?.id || '',
+      },
+    })
 
-  const url = new URL(request.url)
-  const paymentFailed = url.searchParams.get('paymentFailed')
+    const url = new URL(request.url)
+    const paymentFailed = url.searchParams.get('paymentFailed')
 
-  const data = { currentOrder, savedAddresses, paymentError: false }
-  if (paymentFailed) data.paymentError = true
+    const data = { currentOrder, savedAddresses, paymentError: false }
+    if (paymentFailed) data.paymentError = true
 
-  return data
+    return data
+  }
 }
 
 export default function Example() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(
-    paymentMethods[0]
+    paymentMethods?.length && paymentMethods[0]
   )
 
   const { currentOrder, savedAddresses } = useLoaderData()
+
   const orderItems = currentOrder?.orderItems || []
 
   const [selected, setSelected] = useState<Address | null>(
-    savedAddresses[0] || null
+    savedAddresses?.length ? savedAddresses[0] : null
   )
   const [newAddress, setNewAddress] = useState(!savedAddresses?.length)
 
@@ -374,159 +609,167 @@ export default function Example() {
         <div className='lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16'>
           <div>
             <div>
-              {savedAddresses?.length ? (
-                <div className=' lg:max-w-[36rem] '>
-                  <input
-                    type='hidden'
-                    value={selected?.id || ''}
-                    name='selectedAddressId'
-                  />
-                  <Listbox
-                    disabled={newAddress}
-                    value={selected}
-                    onChange={setSelected}
-                  >
-                    {({ open }) => (
-                      <>
-                        <Listbox.Label className='block text-xl font-medium text-gray-900'>
-                          Saved addresses
-                        </Listbox.Label>
-                        <div className='relative mt-4 mb-4'>
-                          <Listbox.Button className=' relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 disabled:cursor-not-allowed disabled:text-gray-400 sm:text-sm'>
-                            <span className='block truncate py-1'>
-                              {newAddress && savedAddresses?.length > 0
-                                ? 'Saving the following information as a new address...'
-                                : selected?.nickname || 'Select an address'}
-                            </span>
-                            <span className='pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2'>
-                              <SelectorIcon
-                                className='h-5 w-5 text-gray-400'
-                                aria-hidden='true'
-                              />
-                            </span>
-                          </Listbox.Button>
+              {currentOrder?.userId ? (
+                <div>
+                  {savedAddresses?.length ? (
+                    <div className=' lg:max-w-[36rem] '>
+                      <input
+                        type='hidden'
+                        value={selected?.id || ''}
+                        name='selectedAddressId'
+                      />
+                      <Listbox
+                        disabled={newAddress}
+                        value={selected}
+                        onChange={setSelected}
+                      >
+                        {({ open }) => (
+                          <>
+                            <Listbox.Label className='block text-xl font-medium text-gray-900'>
+                              Saved addresses
+                            </Listbox.Label>
+                            <div className='relative mt-4 mb-4'>
+                              <Listbox.Button className=' relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500 disabled:cursor-not-allowed disabled:text-gray-400 sm:text-sm'>
+                                <span className='block truncate py-1'>
+                                  {newAddress && savedAddresses?.length > 0
+                                    ? 'Saving the following information as a new address...'
+                                    : selected?.nickname || 'Select an address'}
+                                </span>
+                                <span className='pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2'>
+                                  <SelectorIcon
+                                    className='h-5 w-5 text-gray-400'
+                                    aria-hidden='true'
+                                  />
+                                </span>
+                              </Listbox.Button>
 
-                          <Transition
-                            show={open}
-                            as={Fragment}
-                            leave='transition ease-in duration-100'
-                            leaveFrom='opacity-100'
-                            leaveTo='opacity-0'
+                              <Transition
+                                show={open}
+                                as={Fragment}
+                                leave='transition ease-in duration-100'
+                                leaveFrom='opacity-100'
+                                leaveTo='opacity-0'
+                              >
+                                <Listbox.Options className='absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm'>
+                                  {savedAddresses?.length > 0 &&
+                                    savedAddresses.map((address: Address) => (
+                                      <Listbox.Option
+                                        key={address.id}
+                                        className={({ active }) =>
+                                          classNames(
+                                            active
+                                              ? 'bg-red-500 text-white'
+                                              : 'text-gray-900',
+                                            'relative cursor-default select-none py-2 pl-3 pr-9'
+                                          )
+                                        }
+                                        value={address}
+                                      >
+                                        {({ selected, active }) => (
+                                          <>
+                                            <span
+                                              className={classNames(
+                                                selected
+                                                  ? 'font-semibold'
+                                                  : 'font-normal',
+                                                'block truncate'
+                                              )}
+                                            >
+                                              {address.nickname}
+                                            </span>
+
+                                            {selected ? (
+                                              <span
+                                                className={classNames(
+                                                  active
+                                                    ? 'text-white'
+                                                    : 'text-red-600',
+                                                  'absolute inset-y-0 right-0 flex items-center pr-4'
+                                                )}
+                                              >
+                                                <CheckIcon
+                                                  className='h-5 w-5'
+                                                  aria-hidden='true'
+                                                />
+                                              </span>
+                                            ) : null}
+                                          </>
+                                        )}
+                                      </Listbox.Option>
+                                    ))}
+                                </Listbox.Options>
+                              </Transition>
+                            </div>
+                          </>
+                        )}
+                      </Listbox>
+
+                      {currentOrder?.userId ? (
+                        <div className='my-4 flex items-center'>
+                          <input
+                            checked={newAddress}
+                            onChange={() => setNewAddress(!newAddress)}
+                            type='checkbox'
+                            name='newAddress'
+                            id='new-address'
+                            className='h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500'
+                          />
+                          <label
+                            htmlFor='new-address'
+                            className='ml-2 text-sm text-gray-900'
                           >
-                            <Listbox.Options className='absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm'>
-                              {savedAddresses?.length > 0 &&
-                                savedAddresses.map((address: Address) => (
-                                  <Listbox.Option
-                                    key={address.id}
-                                    className={({ active }) =>
-                                      classNames(
-                                        active
-                                          ? 'bg-red-500 text-white'
-                                          : 'text-gray-900',
-                                        'relative cursor-default select-none py-2 pl-3 pr-9'
-                                      )
-                                    }
-                                    value={address}
-                                  >
-                                    {({ selected, active }) => (
-                                      <>
-                                        <span
-                                          className={classNames(
-                                            selected
-                                              ? 'font-semibold'
-                                              : 'font-normal',
-                                            'block truncate'
-                                          )}
-                                        >
-                                          {address.nickname}
-                                        </span>
-
-                                        {selected ? (
-                                          <span
-                                            className={classNames(
-                                              active
-                                                ? 'text-white'
-                                                : 'text-red-600',
-                                              'absolute inset-y-0 right-0 flex items-center pr-4'
-                                            )}
-                                          >
-                                            <CheckIcon
-                                              className='h-5 w-5'
-                                              aria-hidden='true'
-                                            />
-                                          </span>
-                                        ) : null}
-                                      </>
-                                    )}
-                                  </Listbox.Option>
-                                ))}
-                            </Listbox.Options>
-                          </Transition>
+                            Save the following address as a new address
+                          </label>
                         </div>
-                      </>
-                    )}
-                  </Listbox>
-                  <div className='my-4 flex items-center'>
-                    <input
-                      checked={newAddress}
-                      onChange={() => setNewAddress(!newAddress)}
-                      type='checkbox'
-                      name='newAddress'
-                      id='new-address'
-                      className='h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500'
-                    />
-                    <label
-                      htmlFor='new-address'
-                      className='ml-2 text-sm text-gray-900'
-                    >
-                      Save the following address as a new address
-                    </label>
-                  </div>
-                  {newAddress ? (
-                    <div className='my-4'>
-                      <Input
-                        name='addressNickname'
-                        label='Address nickname'
-                        type='text'
-                        className={`${
-                          loaderData?.error?.message && 'border-red-500'
-                        }`}
-                      />
+                      ) : null}
+                      {newAddress ? (
+                        <div className='my-4'>
+                          <Input
+                            name='addressNickname'
+                            label='Address nickname'
+                            type='text'
+                            className={`${
+                              loaderData?.error?.message && 'border-red-500'
+                            }`}
+                          />
+                        </div>
+                      ) : null}
                     </div>
-                  ) : null}
+                  ) : (
+                    <>
+                      <div className='my-4 flex items-center'>
+                        <input
+                          checked={newAddress}
+                          onChange={() => setNewAddress(!newAddress)}
+                          type='checkbox'
+                          name='newAddress'
+                          id='new-address'
+                          className='h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500'
+                        />
+                        <label
+                          htmlFor='new-address'
+                          className='ml-2 text-sm text-gray-900'
+                        >
+                          Save the following address as a new address
+                        </label>
+                      </div>
+                      {newAddress ? (
+                        <div className='my-4'>
+                          <Input
+                            name='addressNickname'
+                            label='Address nickname'
+                            type='text'
+                            className={`${
+                              loaderData?.error?.message && 'border-red-500'
+                            }`}
+                          />
+                        </div>
+                      ) : null}
+                    </>
+                  )}
                 </div>
-              ) : (
-                <>
-                  <div className='my-4 flex items-center'>
-                    <input
-                      checked={newAddress}
-                      onChange={() => setNewAddress(!newAddress)}
-                      type='checkbox'
-                      name='newAddress'
-                      id='new-address'
-                      className='h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500'
-                    />
-                    <label
-                      htmlFor='new-address'
-                      className='ml-2 text-sm text-gray-900'
-                    >
-                      Save the following address as a new address
-                    </label>
-                  </div>
-                  {newAddress ? (
-                    <div className='my-4'>
-                      <Input
-                        name='addressNickname'
-                        label='Address nickname'
-                        type='text'
-                        className={`${
-                          loaderData?.error?.message && 'border-red-500'
-                        }`}
-                      />
-                    </div>
-                  ) : null}
-                </>
-              )}
+              ) : null}
+
               <div className='mt-5 border-t border-gray-200 pt-5'>
                 <h2 className='text-xl font-medium text-gray-900'>
                   Contact information
@@ -697,7 +940,8 @@ export default function Example() {
                   ))}
                 </div>
               </RadioGroup>
-              {selectedPaymentMethod.id === PaymentMethod.CARD ? (
+              {selectedPaymentMethod &&
+              selectedPaymentMethod.id === PaymentMethod.CARD ? (
                 <div className='mt-4 grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4'>
                   <div className='sm:col-span-2'>
                     <Input

@@ -7,6 +7,7 @@ type InputProps = {
   type?: string
   autoComplete?: string
   value?: string
+  defaultValue?: string
   hideErrors?: boolean
   'data-testid'?: string
   form?: string
@@ -27,6 +28,7 @@ export const Input = forwardRef(
       form,
       className,
       placeholder,
+      defaultValue,
     }: InputProps,
     ref: React.ForwardedRef<HTMLInputElement>
   ) => {
@@ -45,6 +47,7 @@ export const Input = forwardRef(
         <div className='mt-1'>
           <input
             value={value}
+            defaultValue={defaultValue}
             data-testid={dataTestId}
             className={`block w-full appearance-none rounded-md border ${
               error ? 'border-red-500' : 'border-gray-300'

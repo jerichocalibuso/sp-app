@@ -44,8 +44,6 @@ export const loader: LoaderFunction = async ({ request }) => {
 
   if (!orders) return null
 
-  const productIds: string[] = []
-
   return { orders }
 }
 
@@ -127,7 +125,7 @@ export default function Example() {
                         </td>
                         <td className='wrap px-6 py-4'>
                           <div className='text-sm text-gray-900'>
-                            {order.status}
+                            {order.status.replace(/_/g, ' ')}
                           </div>
                         </td>
                         <td className='wrap px-6 py-4'>
