@@ -22,12 +22,11 @@ interface CustomFile extends File {
 }
 
 export const action: ActionFunction = async ({ request, params }) => {
-  const uploadHandler: UploadHandler = async ({ name, stream }) => {
+  const uploadHandler: UploadHandler = async ({ name, data }) => {
     if (name !== 'image') {
-      stream.resume()
-      return
+      return undefined
     }
-    const uploadedImage: any = await uploadImage(stream)
+    const uploadedImage: any = await uploadImage(data)
     return uploadedImage.secure_url
   }
 

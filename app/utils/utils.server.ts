@@ -1,3 +1,4 @@
+import { writeAsyncIterableToWritable } from '@remix-run/node'
 import cloudinary from 'cloudinary'
 import { json } from 'remix'
 import type { Stream } from 'stream'
@@ -8,8 +9,8 @@ cloudinary.v2.config({
   api_secret: process.env.API_SECRET,
 })
 
-async function uploadImage(fileStream: Stream) {
-  return new Promise((resolve, reject) => {
+async function uploadImage(data: any) {
+  return new Promise(async (resolve, reject) => {
     const uploadStream = cloudinary.v2.uploader.upload_stream(
       {
         folder: 'sp-app',
@@ -21,7 +22,7 @@ async function uploadImage(fileStream: Stream) {
         resolve(result)
       }
     )
-    fileStream.pipe(uploadStream)
+    await writeAsyncIterableToWritable(data, uploadStream)
   })
 }
 
