@@ -413,8 +413,6 @@ export const action: ActionFunction = async ({ request }) => {
           paymentOption: 'GCASH',
           addressId: orderAddress?.id,
           sourceId: sourceId,
-          status: Status.PACKAGING,
-          paidAt: new Date(),
         },
       })
 
@@ -439,8 +437,6 @@ export const action: ActionFunction = async ({ request }) => {
           paymentOption: 'GRABPAY',
           addressId: orderAddress?.id,
           sourceId: sourceId,
-          status: Status.PACKAGING,
-          paidAt: new Date(),
         },
       })
 
@@ -466,8 +462,6 @@ export const action: ActionFunction = async ({ request }) => {
           paymentOption: 'PAYMAYA',
           addressId: orderAddress?.id,
           paymentIntentId: paymentIntentId,
-          status: Status.PACKAGING,
-          paidAt: new Date(),
         },
       })
       return redirect(checkoutUrl)
