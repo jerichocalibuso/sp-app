@@ -46,6 +46,7 @@ model Address {
   province      String?
   nickname      String
   contactPerson String?
+  Order         Order[]
 }
 
 enum Status {
@@ -76,11 +77,25 @@ model Order {
   paymentReference String?
   sourceId         String?
   addressId        String?
-  productIds       String[]
-  products         Product[]
+  Address          Address?       @relation(fields: [addressId], references: [id])
   paidAt           DateTime?
   paymentIntentId  String?
   riderId          String?
+  orderItems       OrderItem[]
+  Product          Product[]
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String // relation scalar field (used in the `@relation` attribute above)
+  quantity  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+
+  Order   Order?  @relation(fields: [orderId], references: [id])
+  orderId String?
 }
 
 enum Category {
@@ -90,17 +105,19 @@ enum Category {
 }
 
 model Product {
-  id          String   @id @default(uuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  Order       Order?   @relation(fields: [orderId], references: [id])
-  orderId     String?
+  id          String      @id @default(uuid())
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
   imageUrl    String?
-  name        String   @unique
+  name        String
   category    Category
   price       Int
   weight      Int
   stock       Int
   description String?
   brand       String?
+  quantity    Int         @default(0)
+  Order       Order?      @relation(fields: [orderId], references: [id])
+  orderId     String?
+  OrderItem   OrderItem[]
 }

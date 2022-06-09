@@ -1,69 +1,35 @@
-/* This example requires Tailwind CSS v2.0+ */
-const people = [
-  {
-    name: 'Lorem Ipsum',
-    id: '123-456',
-    title: 'Beef Cubes',
-    department: 'Optimization',
-    role: '01-12-2022',
-    email: 'lorem.ipsum@example.com',
-    number: '0912-123-1234',
-    address: 'House #123, Sample Subdivision',
-  },
-  {
-    name: 'Lorem Ipsum',
-    id: '123-456',
-    title: 'Beef Cubes',
-    department: 'Optimization',
-    role: '01-12-2022',
-    email: 'lorem.ipsum@example.com',
-    number: '0912-123-1234',
-    address: 'House #123, Sample Subdivision',
-  },
-  {
-    name: 'Lorem Ipsum',
-    id: '123-456',
-    title: 'Beef Cubes',
-    department: 'Optimization',
-    role: '01-12-2022',
-    email: 'lorem.ipsum@example.com',
-    number: '0912-123-1234',
-    address: 'House #123, Sample Subdivision',
-  },
-  {
-    name: 'Lorem Ipsum',
-    id: '123-456',
-    title: 'Beef Cubes',
-    department: 'Optimization',
-    role: '01-12-2022',
-    email: 'lorem.ipsum@example.com',
-    number: '0912-123-1234',
-    address: 'House #123, Sample Subdivision',
-  },
-  {
-    name: 'Lorem Ipsum',
-    id: '123-456',
-    title: 'Beef Cubes',
-    department: 'Optimization',
-    role: '01-12-2022',
-    email: 'lorem.ipsum@example.com',
-    number: '0912-123-1234',
-    address: 'House #123, Sample Subdivision',
-  },
-  {
-    name: 'Lorem Ipsum',
-    id: '123-456',
-    title: 'Beef Cubes',
-    department: 'Optimization',
-    role: '01-12-2022',
-    email: 'lorem.ipsum@example.com',
-    number: '0912-123-1234',
-    address: 'House #123, Sample Subdivision',
-  },
-  // More people...
-]
+import { Address, Order, Status, User } from '@prisma/client'
+import { LoaderFunction, useLoaderData } from 'remix'
+import { db } from '~/utils/db.server'
 
-export default function Example() {
+type LoaderData = {
+  orders: (Order & {
+    User: User | null
+    Address: Address | null
+  })[]
+}
+export const loader: LoaderFunction = async ({ params }) => {
+  const orders = await db.order.findMany({
+    where: {
+      status: {
+        not: Status.IN_CART,
+      },
+    },
+    include: {
+      Product: true,
+      User: true,
+      Address: true,
+    },
+  })
+
+  console.log(`orders: ${JSON.stringify(orders, null, 2)}`)
+
+  const data: LoaderData = { orders }
+  return data
+}
+
+export default function ManageOrdersPage() {
+  const { orders } = useLoaderData<LoaderData>()
   return (
     <>
       <div className=' bg-white px-4 py-5 pt-24 sm:px-6'>
@@ -123,12 +89,12 @@ export default function Example() {
                   </tr>
                 </thead>
                 <tbody className='divide-y divide-gray-200 bg-white'>
-                  {people.map((person) => (
-                    <tr key={person.email}>
+                  {orders.map((order) => (
+                    <tr key={order.id}>
                       <td className='whitespace-nowrap px-6 py-4'>
                         <div className='flex '>
                           <div className='text-sm font-medium text-gray-900'>
-                            {person.id}
+                            {order.id}
                           </div>
                         </div>
                       </td>
@@ -136,42 +102,46 @@ export default function Example() {
                         <div className='flex items-center'>
                           <div className=''>
                             <div className='text-sm font-medium text-gray-900'>
-                              {person.name}
+                              {order?.User?.name || 'GUEST'}
                             </div>
                             <div className='text-sm text-gray-500'>
-                              {person.email}
+                              {order?.User?.email || ''}
                             </div>
                             <div className='text-sm text-gray-500'>
-                              {person.number}
+                              {order?.User?.username || ''}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className='whitespace-nowrap px-6 py-4'>
-                        <div className='flex '>
-                          <div className='text-sm font-medium text-gray-900'>
-                            {person.address}
+                        <div className='flex items-center '>
+                          <div className=''>
+                            <div className='text-sm font-medium text-gray-900'>
+                              {order?.Address?.address || 'No address'}
+                            </div>
+                            <div className='text-sm text-gray-500'>
+                              {order?.Address?.city || ''}
+                            </div>
+                            <div className='text-sm text-gray-500'>
+                              {order?.Address?.province || ''}
+                            </div>
+                            <div className='text-sm text-gray-500'>
+                              {order?.Address?.contactPerson || ''}
+                            </div>
+                            <div className='text-sm text-gray-500'>
+                              {order?.Address?.phoneNumber || ''}
+                            </div>
                           </div>
                         </div>
                       </td>
-                      <td className='whitespace-nowrap px-6 py-4'>
-                        <div className='text-sm text-gray-900'>
-                          1x {person.title}
-                        </div>
-                        <div className='text-sm text-gray-900'>
-                          2x {person.title}
-                        </div>
-                        <div className='text-sm text-gray-900'>
-                          3x {person.title}
-                        </div>
-                      </td>
+                      <td className='whitespace-nowrap px-6 py-4'></td>
                       <td className='whitespace-nowrap px-6 py-4'>
                         <span className='inline-flex rounded-full bg-green-100 px-2 text-xs font-semibold leading-5 text-green-800'>
                           Completed
                         </span>
                       </td>
                       <td className='whitespace-nowrap px-6 py-4 text-sm text-gray-500'>
-                        {person.role}
+                        {order.role}
                       </td>
                       <td className='whitespace-nowrap px-6 py-4 text-right text-sm font-medium'>
                         <a href='#' className='text-red-500 hover:text-red-600'>

@@ -5,12 +5,10 @@ import {
   CheckIcon,
   CreditCardIcon,
   SelectorIcon,
-  TrashIcon,
 } from '@heroicons/react/solid'
 import { CashIcon } from '@heroicons/react/outline'
 import {
   ActionFunction,
-  Form,
   json,
   LoaderFunction,
   redirect,
@@ -18,13 +16,13 @@ import {
   useLoaderData,
 } from 'remix'
 import { authenticator } from '~/services/auth.server'
-import { Address, Role, Status } from '@prisma/client'
+import { Address, OrderItem, Role, Status } from '@prisma/client'
 import { db } from '~/utils/db.server'
 import { Product } from './products'
 import { z } from 'zod'
 import { zfd } from 'zod-form-data'
 import { withZod } from '@remix-validated-form/with-zod'
-import { useField, ValidatedForm, validationError } from 'remix-validated-form'
+import { ValidatedForm, validationError } from 'remix-validated-form'
 import { Input } from '~/components/Input'
 import {
   payCard,
@@ -59,6 +57,10 @@ enum PaymentMethod {
   PAYMAYA = 'paymaya',
 }
 
+interface OrderItemData extends OrderItem {
+  product: Product
+}
+
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
 }
@@ -87,6 +89,9 @@ export const action: ActionFunction = async ({ request }) => {
     where: {
       id: orderId,
       status: 'IN_CART',
+    },
+    include: {
+      orderItems: true,
     },
   })
 
@@ -180,7 +185,7 @@ export const action: ActionFunction = async ({ request }) => {
     await db.product.updateMany({
       where: {
         id: {
-          in: order.productIds || [],
+          in: order.orderItems.map((o) => o.productId) || [],
         },
       },
       data: {
@@ -278,7 +283,7 @@ export const action: ActionFunction = async ({ request }) => {
     await db.product.updateMany({
       where: {
         id: {
-          in: order.productIds || [],
+          in: order.orderItems.map((o) => o.productId) || [],
         },
       },
       data: {
@@ -305,17 +310,16 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       userId: user?.id,
       status: 'IN_CART',
     },
-  })
-
-  if (!currentOrder) redirect('/')
-
-  const products = await db.product.findMany({
-    where: {
-      id: {
-        in: currentOrder?.productIds || [],
+    include: {
+      orderItems: {
+        include: {
+          product: true,
+        },
       },
     },
   })
+
+  if (!currentOrder) redirect('/')
 
   const savedAddresses = await db.address.findMany({
     where: {
@@ -326,7 +330,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   const url = new URL(request.url)
   const paymentFailed = url.searchParams.get('paymentFailed')
 
-  const data = { products, currentOrder, savedAddresses, paymentError: false }
+  const data = { currentOrder, savedAddresses, paymentError: false }
   if (paymentFailed) data.paymentError = true
 
   return data
@@ -337,7 +341,8 @@ export default function Example() {
     paymentMethods[0]
   )
 
-  const { currentOrder, products, savedAddresses } = useLoaderData()
+  const { currentOrder, savedAddresses } = useLoaderData()
+  const orderItems = currentOrder?.orderItems || []
 
   const [selected, setSelected] = useState<Address | null>(
     savedAddresses[0] || null
@@ -755,18 +760,13 @@ export default function Example() {
             <div className='mt-6 rounded-lg border border-gray-200 bg-white shadow-sm'>
               <h3 className='sr-only'>Items in your cart</h3>
               <ul role='list' className='divide-y divide-gray-200'>
-                {products.map((product: Product) => {
-                  const quantity = currentOrder?.productIds.filter(
-                    (id: string) => {
-                      return product.id?.toString() === id
-                    }
-                  )?.length
+                {orderItems?.map((orderItem: OrderItemData) => {
+                  const product = orderItem.product
                   return (
                     <li key={product.id} className='flex py-6 px-4 sm:px-6'>
                       <div className='flex-shrink-0'>
                         <img
                           src={product.imageUrl}
-                          alt={product.imageAlt}
                           className='w-40 rounded-md'
                         />
                       </div>
@@ -786,7 +786,7 @@ export default function Example() {
                               ₱{product.price}
                             </p>
                             <div className='mt-2 '>
-                              <p>Quantity: {quantity}</p>
+                              <p>Quantity: {orderItem.quantity}</p>
                             </div>
                           </div>
 

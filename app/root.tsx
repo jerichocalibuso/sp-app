@@ -45,8 +45,14 @@ export const loader: LoaderFunction = async ({ request }) => {
         userId: user.id,
         status: 'IN_CART',
       },
+      include: {
+        orderItems: {
+          include: {
+            product: true,
+          },
+        },
+      },
     })
-
     return json({ user, currentOrder })
   }
 

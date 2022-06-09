@@ -221,14 +221,14 @@ export default function Example() {
                       ) : null}
                     </div>
 
-                    <div className='text-sm'>
+                    {/* <div className='text-sm'>
                       <a
                         href='#'
                         className='font-medium text-red-600 hover:text-red-500'
                       >
                         Forgot your password?
                       </a>
-                    </div>
+                    </div> */}
                   </div>
 
                   <div>

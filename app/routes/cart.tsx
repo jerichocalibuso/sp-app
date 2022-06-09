@@ -50,11 +50,7 @@ export const action: ActionFunction = async ({ request }) => {
   })
 
   if (!product) {
-    return validationError({
-      fieldErrors: {
-        name: 'Product does not exist',
-      },
-    })
+    return null
   }
 
   if (user?.role === Role.CUSTOMER) {
@@ -63,60 +59,83 @@ export const action: ActionFunction = async ({ request }) => {
         userId: user?.id,
         status: 'IN_CART',
       },
+      include: {
+        orderItems: true,
+      },
     })
-    const currentProductIds = currentOrder?.productIds
-
     if (currentOrder) {
+      const existingProduct = currentOrder.orderItems.find(
+        (p) => p.productId === product.id
+      )
       if (_method === 'ADD') {
+        if (existingProduct) {
+          await db.orderItem.update({
+            where: {
+              id: existingProduct.id,
+            },
+            data: {
+              quantity: {
+                increment: 1,
+              },
+            },
+          })
+        } else {
+          await db.orderItem.create({
+            data: {
+              productId: product.id,
+              quantity: 1,
+              orderId: currentOrder.id,
+            },
+          })
+        }
         const updatedOrder = await db.order.update({
+          where: { id: currentOrder.id },
+          data: {
+            amount: { increment: product.price },
+          },
+          include: { orderItems: true },
+        })
+
+        return { order: updatedOrder }
+      } else {
+        const updatedOrderItem = await db.orderItem.update({
           where: {
-            id: currentOrder?.id,
+            id: existingProduct?.id,
           },
           data: {
-            amount: currentOrder.amount + product.price,
-            productIds: {
-              push: [productId],
-            },
+            quantity: { decrement: 1 },
           },
         })
-        return updatedOrder
-      } else {
-        const productIndex = currentProductIds?.indexOf(productId) || 0
-        currentProductIds?.splice(productIndex, 1)
+
+        if (updatedOrderItem?.quantity === 0) {
+          await db.orderItem.delete({
+            where: {
+              id: existingProduct?.id,
+            },
+          })
+        }
 
         const updatedOrder = await db.order.update({
-          where: {
-            id: currentOrder?.id,
-          },
+          where: { id: currentOrder.id },
           data: {
-            amount: currentOrder.amount - product.price,
-            productIds: {
-              set: currentProductIds,
-            },
+            amount: { decrement: product.price },
           },
+          include: { orderItems: true },
         })
-        if (updatedOrder.productIds.length === 0) {
-          const deletedOrder = await db.order.delete({
+
+        if (updatedOrder.orderItems.length === 0) {
+          await db.order.delete({
             where: {
               id: currentOrder?.id,
             },
           })
-          return null
         } else {
           return updatedOrder
         }
       }
-    } else {
-      return await db.order.create({
-        data: {
-          amount: product.price,
-          productIds: [product.id],
-          status: Status.IN_CART,
-          userId: user?.id,
-        },
-      })
     }
   }
+  return null
 }
 export const loader: LoaderFunction = async ({ request }) => {
   const user = await authenticator.isAuthenticated(request, {
@@ -132,21 +151,22 @@ export const loader: LoaderFunction = async ({ request }) => {
         userId: user.id,
         status: 'IN_CART',
       },
-    })
-    const products = await db.product.findMany({
-      where: {
-        id: {
-          in: currentOrder?.productIds || [],
+      include: {
+        orderItems: {
+          include: {
+            product: true,
+          },
         },
       },
     })
-    return { currentOrder, products }
+
+    return { currentOrder }
   }
   return null
 }
 
 export default function CartPage() {
-  const { currentOrder, products } = useLoaderData()
+  const { currentOrder } = useLoaderData()
   return (
     <div className='bg-white'>
       <div className='mx-auto max-w-2xl px-4 pt-24 pb-24 sm:px-6 lg:max-w-7xl lg:px-8'>
@@ -163,12 +183,8 @@ export default function CartPage() {
               role='list'
               className='divide-y divide-gray-200 border-t border-b border-gray-200'
             >
-              {products.map((product: Product) => {
-                const quantity = currentOrder?.productIds.filter(
-                  (id: string) => {
-                    return product.id?.toString() === id
-                  }
-                )?.length
+              {currentOrder?.orderItems?.map((orderItem: any) => {
+                const product = orderItem.product
                 return (
                   <li
                     key={product.id}
@@ -177,7 +193,6 @@ export default function CartPage() {
                     <div className='flex-shrink-0'>
                       <img
                         src={product.imageUrl}
-                        alt={product.imageAlt}
                         className='h-24 w-24 rounded-md object-cover object-center sm:h-48 sm:w-48'
                       />
                     </div>
@@ -201,7 +216,7 @@ export default function CartPage() {
                           </p>
                           <div className='mt-4'>
                             <Quantity
-                              quantity={quantity}
+                              quantity={orderItem.quantity}
                               productId={product.id?.toString()}
                             />
                           </div>
@@ -227,7 +242,7 @@ export default function CartPage() {
                 )
               })}
             </ul>
-            {products?.length === 0 && (
+            {!currentOrder?.orderItems && (
               <h2 className='mt-2 text-xl font-semibold'>Your cart is empty</h2>
             )}
           </section>

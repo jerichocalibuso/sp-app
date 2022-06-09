@@ -8,7 +8,7 @@ import {
   XIcon,
 } from '@heroicons/react/outline'
 import { Link, LoaderFunction } from 'remix'
-import { Order, Role, User } from '@prisma/client'
+import { Order, Role, User, OrderItem } from '@prisma/client'
 import { ArrowRightIcon } from '@heroicons/react/solid'
 import AccountDropdown from './AccountDropdown'
 import { authenticator } from '~/services/auth.server'
@@ -23,13 +23,19 @@ const navigation = {
   ],
 }
 
+interface OrderData extends Order {
+  orderItems: OrderItem[]
+}
+
 type NavbarProps = {
   user: User | null
-  currentOrder: Order | null
+  currentOrder: OrderData | null
 }
 
 export default function Navbar({ user, currentOrder }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  let orderItemCount = 0
+  currentOrder?.orderItems.forEach((o) => (orderItemCount += o.quantity))
   return (
     <>
       <Transition.Root show={mobileMenuOpen} as={Fragment}>
@@ -203,7 +209,7 @@ export default function Navbar({ user, currentOrder }: NavbarProps) {
                               aria-hidden='true'
                             />
                             <span className='ml-2 text-sm font-medium text-gray-700 group-hover:text-red-600'>
-                              {currentOrder?.productIds?.length || 0}
+                              {orderItemCount}
                             </span>
                             <span className='sr-only'>
                               items in cart, view cart

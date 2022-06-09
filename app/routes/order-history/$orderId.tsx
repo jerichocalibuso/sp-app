@@ -1,4 +1,4 @@
-import { Product, Role } from '@prisma/client'
+import { Order, OrderItem, Product, Role } from '@prisma/client'
 import { LoaderFunction, redirect } from '@remix-run/node'
 import { useLoaderData, Link } from '@remix-run/react'
 import { authenticator } from '~/services/auth.server'
@@ -22,22 +22,33 @@ export const loader: LoaderFunction = async ({ params, request }) => {
       id: orderId,
       userId: user?.id,
     },
+    include: {
+      orderItems: {
+        include: {
+          product: true,
+        },
+      },
+    },
   })
 
   if (!order) redirect('/cart')
 
-  const products = await db.product.findMany({
-    where: {
-      id: {
-        in: order?.productIds || [],
-      },
-    },
-  })
-  return { order, products }
+  return { order }
+}
+
+interface OrderItemData extends OrderItem {
+  product: Product
+}
+
+interface OrderData extends Order {
+  orderItems: OrderItemData[]
+}
+interface LoaderData {
+  order: OrderData
 }
 
 export default function OrderDetailsPage() {
-  const { order, products } = useLoaderData()
+  const { order } = useLoaderData<LoaderData>()
   return (
     <div className='bg-white'>
       <div className='mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8'>
@@ -46,7 +57,7 @@ export default function OrderDetailsPage() {
             Order details
           </h1>
           <p className='mt-2 text-base text-gray-500'>
-            {new Date(order?.paidAt)?.toLocaleDateString('en-us', {
+            {new Date(order?.paidAt || '')?.toLocaleDateString('en-us', {
               year: 'numeric',
               month: 'long',
               day: 'numeric',
@@ -67,10 +78,9 @@ export default function OrderDetailsPage() {
           <h2 className='sr-only'>Your order</h2>
 
           <h3 className='sr-only'>Items</h3>
-          {products.map((product: Product) => {
-            const quantity = order?.productIds.filter((id: string) => {
-              return product.id?.toString() === id
-            })?.length
+          {order.orderItems.map((orderItem) => {
+            const quantity = orderItem.quantity
+            const product = orderItem.product
             return (
               <div
                 key={product.id}

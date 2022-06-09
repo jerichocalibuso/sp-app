@@ -1,13 +1,19 @@
-import { Order, Product, Role } from '@prisma/client'
+import { Order, OrderItem, Product, Role } from '@prisma/client'
 import { LoaderFunction, redirect } from '@remix-run/node'
 import { Link, useLoaderData } from '@remix-run/react'
 import { useNavigate } from 'react-router'
 import { authenticator } from '~/services/auth.server'
 import { db } from '~/utils/db.server'
 
+interface OrderItemData extends OrderItem {
+  product: Product
+}
+
+interface OrderData extends Order {
+  orderItems: OrderItemData[]
+}
 interface LoaderData {
-  orders: Order[]
-  products: Product[]
+  orders: OrderData[]
 }
 export const loader: LoaderFunction = async ({ request }) => {
   const user = await authenticator.isAuthenticated(request)
@@ -27,30 +33,24 @@ export const loader: LoaderFunction = async ({ request }) => {
         not: null,
       },
     },
+    include: {
+      orderItems: {
+        include: {
+          product: true,
+        },
+      },
+    },
   })
 
   if (!orders) return null
 
   const productIds: string[] = []
 
-  orders.forEach((order) =>
-    order.productIds.forEach((productId) => productIds.push(productId))
-  )
-
-  const uniqueProductIds = [...new Set(productIds)]
-  const products = await db.product.findMany({
-    where: {
-      id: {
-        in: uniqueProductIds,
-      },
-    },
-  })
-
-  return { orders, products }
+  return { orders }
 }
 
 export default function Example() {
-  const { orders, products } = useLoaderData()
+  const { orders } = useLoaderData<LoaderData>()
   const navigate = useNavigate()
 
   return (
@@ -109,8 +109,7 @@ export default function Example() {
                   </tr>
                 </thead>
                 <tbody className='divide-y divide-gray-200 bg-white'>
-                  {orders.map((order: Order) => {
-                    const uniqueProductIds = [...new Set(order.productIds)]
+                  {orders?.map((order) => {
                     return (
                       <tr
                         className='hover:cursor-pointer hover:bg-red-50'
@@ -133,15 +132,9 @@ export default function Example() {
                         </td>
                         <td className='wrap px-6 py-4'>
                           <div className='text-sm text-gray-900'>
-                            {uniqueProductIds.map((productId: string) => {
-                              const quantity = order?.productIds.filter(
-                                (id: string) => {
-                                  return productId?.toString() === id
-                                }
-                              )?.length
-                              const product = products?.find(
-                                (p: Product) => p.id === productId
-                              )
+                            {order.orderItems.map((orderItem) => {
+                              const quantity = orderItem.quantity
+                              const product = orderItem.product
                               return (
                                 <div key={product.id}>
                                   {quantity}x {product.name}
