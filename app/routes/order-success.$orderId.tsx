@@ -16,6 +16,7 @@ import {
 } from '~/services/paymongo.server'
 import { db } from '~/utils/db.server'
 import { Link, useLoaderData } from '@remix-run/react'
+import { destroySession, getSession } from '~/services/guest.server'
 
 /* This example requires Tailwind CSS v2.0+ */
 
@@ -57,6 +58,7 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 
   const productIds = order?.orderItems.map((orderItem) => orderItem.productId)
 
+  const session = await getSession(request)
   if (order?.sourceId && !order?.paidAt) {
     const res = await retrieveSource(order?.sourceId)
     if (!res.status) {
@@ -91,7 +93,11 @@ export const loader: LoaderFunction = async ({ params, request }) => {
           stock: { decrement: 1 },
         },
       })
-      return redirect(`/order-success/${orderId}`)
+      return redirect(`/order-success/${orderId}`, {
+        headers: {
+          'Set-Cookie': await destroySession(session),
+        },
+      })
     }
   }
 
@@ -120,7 +126,11 @@ export const loader: LoaderFunction = async ({ params, request }) => {
           stock: { decrement: 1 },
         },
       })
-      return redirect(`/order-success/${orderId}`)
+      return redirect(`/order-success/${orderId}`, {
+        headers: {
+          'Set-Cookie': await destroySession(session),
+        },
+      })
     } else {
       return redirect('/checkout?paymentFailed=true')
     }
@@ -237,6 +247,10 @@ export default function Example() {
             <dl className='space-y-6 border-t border-gray-200 pt-10 text-sm'>
               <div className='flex justify-between'>
                 <dt className='font-medium text-gray-900'>Subtotal</dt>
+                <dd className='text-gray-700'>₱{order.amount}</dd>
+              </div>
+              <div className='flex justify-between'>
+                <dt className='font-medium text-gray-900'>Delivery</dt>
                 <dd className='text-gray-700'>₱50</dd>
               </div>
               <div className='flex justify-between'>
@@ -248,13 +262,10 @@ export default function Example() {
                 </dt>
                 <dd className='text-gray-700'>-₱50</dd>
               </div>
-              <div className='flex justify-between'>
-                <dt className='font-medium text-gray-900'>Delivery</dt>
-                <dd className='text-gray-700'>$0</dd>
-              </div>
+
               <div className='flex justify-between'>
                 <dt className='font-medium text-gray-900'>Total</dt>
-                <dd className='text-gray-900'>₱50</dd>
+                <dd className='text-gray-900'>₱{order.amount}</dd>
               </div>
             </dl>
           </div>
