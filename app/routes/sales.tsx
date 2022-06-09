@@ -210,7 +210,7 @@ export default function Example() {
       name: 'Average Order Completion Rate',
       stat: `${currentCompletionRate}%`,
       previousStat: `${previousCompletionRate}%`,
-      change: currentCompletionRate - previousCompletionRate,
+      change: (currentCompletionRate - previousCompletionRate).toFixed(2),
       changeType:
         currentCompletionRate - previousCompletionRate > 0
           ? 'increase'
