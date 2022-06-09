@@ -1,4 +1,4 @@
-import { Role, Status } from '@prisma/client'
+import { OrderItem, Role, Status } from '@prisma/client'
 import { LoaderFunction } from '@remix-run/node'
 import { useLoaderData } from '@remix-run/react'
 import { ProductsPage } from '~/components/ProductsPage'
@@ -7,6 +7,7 @@ import { Category, Product } from './products'
 import { ActionFunction, redirect } from '@remix-run/node'
 import { authenticator } from '~/services/auth.server'
 import { validationError } from 'remix-validated-form'
+import { commitSession, getSession } from '~/services/guest.server'
 
 export const loader: LoaderFunction = async ({ params }) => {
   const products = await db.product.findMany({
@@ -19,12 +20,9 @@ export const loader: LoaderFunction = async ({ params }) => {
 
 export const action: ActionFunction = async ({ request }) => {
   const user = await authenticator.isAuthenticated(request)
+
   if (user?.role === Role.RIDER || user?.role === Role.ADMIN) {
     return redirect('/unauthorized')
-  }
-
-  if (!user?.role) {
-    return redirect('/signin')
   }
 
   const formData = await request.formData()
@@ -107,6 +105,34 @@ export const action: ActionFunction = async ({ request }) => {
 
       return { order: updatedOrder }
     }
+  } else {
+    const session = await getSession(request)
+    const orderItems = session.get('orderItems') || []
+    const existingProduct = orderItems.find(
+      (orderItem: OrderItem) => orderItem.productId === product.id
+    )
+    const existingProductIndex = orderItems.findIndex(
+      (orderItem: OrderItem) => orderItem.productId === product.id
+    )
+    if (existingProduct) {
+      orderItems[existingProductIndex] = {
+        product,
+        productId: product.id,
+        quantity: existingProduct.quantity + 1,
+      }
+    } else {
+      orderItems.push({
+        product,
+        productId: product.id,
+        quantity: 1,
+      })
+    }
+    session.set('orderItems', orderItems)
+    return redirect('/products', {
+      headers: {
+        'Set-Cookie': await commitSession(session),
+      },
+    })
   }
 }
 
