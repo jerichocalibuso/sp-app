@@ -1,9 +1,162 @@
-import { Category, PrismaClient, Product } from '@prisma/client'
+import {
+  Category,
+  PrismaClient,
+  Product,
+  Role,
+  Status,
+  User,
+} from '@prisma/client'
 export const db = new PrismaClient()
 
 async function seed() {
   const products = getProducts()
   await db.product.createMany({ data: products })
+  const users = getUsers()
+  await db.user.createMany({ data: users })
+  const product = await db.product.findFirst({})
+  await db.order.createMany({
+    data: [
+      {
+        amount: 5000,
+        status: Status.COMPLETED,
+        paidAt: new Date('01/02/2022'),
+        createdAt: new Date('01/02/2022'),
+        paymentOption: 'COD',
+      },
+      {
+        amount: 6000,
+        status: Status.COMPLETED,
+        paidAt: new Date('02/02/2022'),
+        createdAt: new Date('02/02/2022'),
+        paymentOption: 'COD',
+      },
+      {
+        amount: 4000,
+        status: Status.COMPLETED,
+        paidAt: new Date('03/02/2022'),
+        createdAt: new Date('03/02/2022'),
+        paymentOption: 'COD',
+      },
+      {
+        amount: 3000,
+        status: Status.COMPLETED,
+        paidAt: new Date('04/02/2022'),
+        createdAt: new Date('04/02/2022'),
+        paymentOption: 'COD',
+      },
+      {
+        amount: 2000,
+        status: Status.COMPLETED,
+        paidAt: new Date('05/02/2022'),
+        createdAt: new Date('05/02/2022'),
+        paymentOption: 'COD',
+      },
+      {
+        amount: 2000,
+        status: Status.COMPLETED,
+        paidAt: new Date('05/02/2022'),
+        createdAt: new Date('05/02/2022'),
+        paymentOption: 'COD',
+      },
+      {
+        amount: 2000,
+        status: Status.COMPLETED,
+        paidAt: new Date('05/02/2022'),
+        createdAt: new Date('05/02/2022'),
+        paymentOption: 'COD',
+      },
+
+      {
+        amount: 2000,
+        status: Status.CANCELLED,
+        paidAt: new Date('05/02/2022'),
+        createdAt: new Date('05/02/2022'),
+        paymentOption: 'COD',
+      },
+      {
+        amount: 2000,
+        status: Status.IN_CART,
+        paidAt: new Date('05/02/2022'),
+        createdAt: new Date('05/02/2022'),
+        paymentOption: 'COD',
+      },
+      {
+        amount: 2000,
+        status: Status.CANCELLED,
+        paidAt: new Date('05/02/2022'),
+        createdAt: new Date('05/02/2022'),
+        paymentOption: 'COD',
+      },
+      {
+        amount: 2000,
+        status: Status.IN_CART,
+        paidAt: new Date('05/02/2022'),
+        createdAt: new Date('05/02/2022'),
+        paymentOption: 'COD',
+      },
+      {
+        amount: 2000,
+        status: Status.COMPLETED,
+        paidAt: new Date('06/02/2022'),
+        createdAt: new Date('06/02/2022'),
+        paymentOption: 'COD',
+      },
+      {
+        amount: 2000,
+        status: Status.COMPLETED,
+        paidAt: new Date('06/02/2022'),
+        createdAt: new Date('06/02/2022'),
+        paymentOption: 'COD',
+      },
+      {
+        amount: 2000,
+        status: Status.COMPLETED,
+        paidAt: new Date('06/02/2022'),
+        createdAt: new Date('06/02/2022'),
+        paymentOption: 'COD',
+      },
+      {
+        amount: 2000,
+        status: Status.COMPLETED,
+        paidAt: new Date('06/02/2022'),
+        createdAt: new Date('06/02/2022'),
+        paymentOption: 'COD',
+      },
+      {
+        amount: 2000,
+        status: Status.COMPLETED,
+        paidAt: new Date('06/02/2022'),
+        createdAt: new Date('06/02/2022'),
+        paymentOption: 'COD',
+      },
+
+      {
+        amount: 2000,
+        status: Status.CANCELLED,
+        paidAt: new Date('05/02/2022'),
+        createdAt: new Date('05/02/2022'),
+        paymentOption: 'COD',
+      },
+      {
+        amount: 2000,
+        status: Status.IN_CART,
+        paidAt: new Date('05/02/2022'),
+        createdAt: new Date('05/02/2022'),
+        paymentOption: 'COD',
+      },
+    ],
+  })
+
+  const orders = await db.order.findMany({})
+  orders.map(async (order) => {
+    await db.orderItem.create({
+      data: {
+        orderId: order.id,
+        productId: product?.id || '',
+        quantity: 10,
+      },
+    })
+  })
 }
 
 seed()
@@ -453,6 +606,41 @@ function getProducts() {
       price: 100,
       stock: 100,
       weight: 500,
+    },
+  ]
+}
+
+function getUsers() {
+  return [
+    {
+      name: 'Jericho Customer',
+      username: 'jericho_customer',
+      password: '$2a$10$HKZoVmGdI.Hl6WAHRt2EheOHtI5vkUSpcTyx0RcvVT6/Cwhpagt6m',
+      role: Role.CUSTOMER,
+    },
+    {
+      name: 'Jericho Rider One',
+      username: 'jericho_rider1',
+      password: '$2a$10$HKZoVmGdI.Hl6WAHRt2EheOHtI5vkUSpcTyx0RcvVT6/Cwhpagt6m',
+      role: Role.RIDER,
+    },
+    {
+      name: 'Jericho Rider Two',
+      username: 'jericho_rider2',
+      password: '$2a$10$HKZoVmGdI.Hl6WAHRt2EheOHtI5vkUSpcTyx0RcvVT6/Cwhpagt6m',
+      role: Role.RIDER,
+    },
+    {
+      name: 'Jericho Admin',
+      username: 'jericho_admin',
+      password: '$2a$10$HKZoVmGdI.Hl6WAHRt2EheOHtI5vkUSpcTyx0RcvVT6/Cwhpagt6m',
+      role: Role.ADMIN,
+    },
+    {
+      name: 'Sir JM Admin',
+      username: 'sirjm_admin',
+      password: '$2a$10$HKZoVmGdI.Hl6WAHRt2EheOHtI5vkUSpcTyx0RcvVT6/Cwhpagt6m',
+      role: Role.ADMIN,
     },
   ]
 }

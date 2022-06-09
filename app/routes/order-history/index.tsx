@@ -9,7 +9,7 @@ interface OrderItemData extends OrderItem {
   product: Product
 }
 
-interface OrderData extends Order {
+export interface OrderData extends Order {
   orderItems: OrderItemData[]
 }
 interface LoaderData {
@@ -17,6 +17,9 @@ interface LoaderData {
 }
 export const loader: LoaderFunction = async ({ request }) => {
   const user = await authenticator.isAuthenticated(request)
+
+  const url = new URL(request.url)
+  const page = parseInt(url?.searchParams?.get('page') || '0')
 
   if (!user?.role) {
     return redirect('/signin')
@@ -27,6 +30,8 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
 
   const orders = await db.order.findMany({
+    skip: page * 10,
+    take: 10,
     where: {
       userId: user?.id,
       paidAt: {
@@ -39,6 +44,9 @@ export const loader: LoaderFunction = async ({ request }) => {
           product: true,
         },
       },
+    },
+    orderBy: {
+      updatedAt: 'desc',
     },
   })
 

@@ -146,7 +146,7 @@ export default function Example() {
         orderId={order?.id || ''}
       />
       <div className='mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8'>
-        <div className='max-w-xl'>
+        <div className='max-w-20'>
           <h1 className='mt-2 text-4xl font-extrabold tracking-tight sm:text-5xl'>
             Edit order
           </h1>
@@ -183,16 +183,16 @@ export default function Example() {
               value={order.status}
               className={`${loaderData?.error?.message && 'border-red-500'}`}
             />
-            <div className='flex justify-end'>
+            <div className='flex justify-end border-b border-gray-200 pb-4'>
               <button
                 onClick={() => setConfirmingDeletion(true)}
-                className='mr-2 inline-flex w-full justify-end rounded-md border border-transparent border-red-600 px-4 py-2 text-base font-medium text-red-500 shadow-sm hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:w-auto sm:text-sm  '
+                className='mr-2 inline-flex w-auto justify-end rounded-md border border-transparent border-red-600 px-4 py-2 text-base font-medium text-red-500 shadow-sm hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:w-auto sm:text-sm  '
               >
                 Delete
               </button>
               <button
                 type='submit'
-                className='inline-flex w-full justify-end rounded-md border border-transparent bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:w-auto sm:text-sm'
+                className='inline-flex w-auto justify-end rounded-md border border-transparent bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:w-auto sm:text-sm'
               >
                 Submit
               </button>
@@ -217,7 +217,9 @@ export default function Example() {
           </dl>
           <dl className='mt-6 text-sm font-medium'>
             <dt className='text-gray-900'>Order status</dt>
-            <dd className='mt-2 text-red-500'>{order?.status || ''}</dd>
+            <dd className='mt-2 text-red-500'>
+              {order?.status?.replace(/_/g, ' ') || ''}
+            </dd>
           </dl>
         </div>
 

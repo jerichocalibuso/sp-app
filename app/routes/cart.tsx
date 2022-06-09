@@ -347,7 +347,7 @@ export default function CartPage() {
             </dl>
 
             <div className='mt-6'>
-              {currentOrder ? (
+              {currentOrder?.orderItems?.length ? (
                 <Link to='/checkout'>
                   <button className='w-full rounded-md border border-transparent bg-red-500 py-3 px-4 text-base font-medium text-white shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-50'>
                     Checkout

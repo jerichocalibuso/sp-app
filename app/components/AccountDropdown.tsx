@@ -10,7 +10,7 @@ interface MenuItem {
   route: string
 }
 
-const adminMenuItems: MenuItem[] = [
+export const adminMenuItems: MenuItem[] = [
   {
     label: 'Manage Users',
     route: '/manage-users',
@@ -29,14 +29,14 @@ const adminMenuItems: MenuItem[] = [
   },
 ]
 
-const customerMenuItems: MenuItem[] = [
+export const customerMenuItems: MenuItem[] = [
   {
     label: 'Order History',
     route: '/order-history',
   },
 ]
 
-const riderMenuItems: MenuItem[] = [
+export const riderMenuItems: MenuItem[] = [
   {
     label: 'Assigned Orders',
     route: '/assigned-orders',

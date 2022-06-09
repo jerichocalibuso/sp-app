@@ -1,170 +1,249 @@
-/*
-  This example requires Tailwind CSS v2.0+ 
-  
-  This example requires some changes to your config:
-  
-  ```
-  // tailwind.config.js
-  const colors = require('tailwindcss/colors')
-  
-  module.exports = {
-    // ...
-    theme: {
-      extend: {
-        colors: {
-          cyan: colors.cyan,
-        },
-      },
-    },
-    plugins: [
-      // ...
-      require('@tailwindcss/forms'),
-    ],
-  }
-  ```
-*/
-import { Fragment, useState } from 'react'
-import { Dialog, Menu, Transition } from '@headlessui/react'
+import { ArrowSmUpIcon } from '@heroicons/react/outline'
+import { ArrowSmDownIcon } from '@heroicons/react/solid'
+import { OrderData } from './manage-orders'
+import { LoaderFunction } from '@remix-run/node'
+import { db } from '~/utils/db.server'
+import { Status } from '@prisma/client'
+import { useLoaderData, useSearchParams, Link } from '@remix-run/react'
+import { useNavigate } from 'react-router'
 import {
-  ArrowSmUpIcon,
-  BellIcon,
-  ClockIcon,
-  CogIcon,
-  CreditCardIcon,
-  DocumentReportIcon,
-  HomeIcon,
-  MenuAlt1Icon,
-  QuestionMarkCircleIcon,
-  ScaleIcon,
-  ShieldCheckIcon,
-  UserGroupIcon,
-  XIcon,
-} from '@heroicons/react/outline'
-import {
-  ArrowSmDownIcon,
-  CashIcon,
-  CheckCircleIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
-  OfficeBuildingIcon,
-  SearchIcon,
-} from '@heroicons/react/solid'
-
-const navigation = [
-  { name: 'Home', href: '#', icon: HomeIcon, current: true },
-  { name: 'History', href: '#', icon: ClockIcon, current: false },
-  { name: 'Balances', href: '#', icon: ScaleIcon, current: false },
-  { name: 'Cards', href: '#', icon: CreditCardIcon, current: false },
-  { name: 'Recipients', href: '#', icon: UserGroupIcon, current: false },
-  { name: 'Reports', href: '#', icon: DocumentReportIcon, current: false },
-]
-const secondaryNavigation = [
-  { name: 'Settings', href: '#', icon: CogIcon },
-  { name: 'Help', href: '#', icon: QuestionMarkCircleIcon },
-  { name: 'Privacy', href: '#', icon: ShieldCheckIcon },
-]
-const cards = [
-  {
-    name: 'Total Gross Sales',
-    stat: '71,897',
-    previousStat: '70,946',
-    change: '12%',
-    changeType: 'increase',
-  },
-  {
-    name: 'Average Order Amount',
-    stat: '1123',
-    previousStat: '774',
-    change: '145%',
-    changeType: 'increase',
-  },
-  {
-    name: 'Average Order Completion Rate',
-    stat: '90%',
-    previousStat: '95%',
-    change: '5%',
-    changeType: 'decrease',
-  },
-]
-const transactions = [
-  {
-    id: 1,
-    name: '123-456',
-    href: '#',
-    amount: '₱1,000',
-    status: 'Completed',
-    date: 'January 11, 2022',
-    datetime: '2022-01-11',
-  },
-  {
-    id: 1,
-    name: '123-456',
-    href: '#',
-    amount: '₱1,000',
-    status: 'Completed',
-    date: 'January 11, 2022',
-    datetime: '2022-01-11',
-  },
-  {
-    id: 1,
-    name: '123-456',
-    href: '#',
-    amount: '₱1,000',
-    status: 'Completed',
-    date: 'January 11, 2022',
-    datetime: '2022-01-11',
-  },
-  {
-    id: 1,
-    name: '123-456',
-    href: '#',
-    amount: '₱1,000',
-    status: 'Completed',
-    date: 'January 11, 2022',
-    datetime: '2022-01-11',
-  },
-  {
-    id: 1,
-    name: '123-456',
-    href: '#',
-    amount: '₱1,000',
-    status: 'Completed',
-    date: 'January 11, 2022',
-    datetime: '2022-01-11',
-  },
-  {
-    id: 1,
-    name: '123-456',
-    href: '#',
-    amount: '₱1,000',
-    status: 'Completed',
-    date: 'January 11, 2022',
-    datetime: '2022-01-11',
-  },
-  {
-    id: 1,
-    name: '123-456',
-    href: '#',
-    amount: '₱1,000',
-    status: 'Completed',
-    date: 'January 11, 2022',
-    datetime: '2022-01-11',
-  },
-  // More transactions...
-]
-const statusStyles = {
-  success: 'bg-green-100 text-green-800',
-  processing: 'bg-yellow-100 text-yellow-800',
-  failed: 'bg-gray-100 text-gray-800',
-}
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
 }
 
-export default function Example() {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+type LoaderData = {
+  orders: OrderData[]
+  ordersCount: number
+  currentMonthGross: number
+  previousMonthGross: number
+  currentMonthCount: number
+  previousMonthCount: number
+  currentCompletionRate: number
+  previousCompletionRate: number
+}
+export const loader: LoaderFunction = async ({ request }) => {
+  const url = new URL(request.url)
+  const page = parseInt(url?.searchParams?.get('page') || '0')
+  const orders = await db.order.findMany({
+    skip: page * 10,
+    take: 10,
+    where: {
+      paidAt: {
+        not: null,
+      },
+      status: Status.COMPLETED,
+    },
+    include: {
+      Address: true,
+      orderItems: {
+        include: {
+          product: true,
+        },
+      },
+    },
+    orderBy: {
+      updatedAt: 'desc',
+    },
+  })
 
+  const ordersCount = await db.order.count({
+    where: {
+      paidAt: {
+        not: null,
+      },
+      status: Status.COMPLETED,
+    },
+  })
+
+  const nonCompletedCurrentOrders = await db.order.findMany({
+    where: {
+      createdAt: {
+        lte: new Date('2022-06-30'),
+        gte: new Date('2022-06-01'),
+      },
+      status: {
+        not: Status.COMPLETED,
+      },
+    },
+  })
+
+  const completedCurrentOrders = await db.order.findMany({
+    where: {
+      createdAt: {
+        lte: new Date('2022-06-30'),
+        gte: new Date('2022-06-01'),
+      },
+      status: Status.COMPLETED,
+    },
+  })
+
+  const nonCompletedPreviousOrders = await db.order.findMany({
+    where: {
+      createdAt: {
+        lte: new Date('2022-05-30'),
+        gte: new Date('2022-05-01'),
+      },
+      status: {
+        not: Status.COMPLETED,
+      },
+    },
+  })
+
+  const completedPreviousOrders = await db.order.findMany({
+    where: {
+      createdAt: {
+        lte: new Date('2022-05-30'),
+        gte: new Date('2022-05-01'),
+      },
+      status: Status.COMPLETED,
+    },
+  })
+  const currentMonthOrders = await db.order.findMany({
+    where: {
+      paidAt: {
+        lte: new Date('2022-06-30'),
+        gte: new Date('2022-06-01'),
+      },
+      status: Status.COMPLETED,
+    },
+  })
+
+  const previousMonthOrders = await db.order.findMany({
+    where: {
+      paidAt: {
+        lte: new Date('2022-05-30'),
+        gte: new Date('2022-05-01'),
+      },
+      status: Status.COMPLETED,
+    },
+  })
+
+  const currentMonthGross = currentMonthOrders.reduce(
+    (sum, order) => sum + order.amount,
+    0
+  )
+
+  const previousMonthGross = previousMonthOrders.reduce(
+    (sum, order) => sum + order.amount,
+    0
+  )
+  const currentMonthCount = currentMonthOrders.length
+  const previousMonthCount = previousMonthOrders.length
+  console.log(
+    `nonCompletedCurrentOrders.length: ${JSON.stringify(
+      nonCompletedCurrentOrders.length,
+      null,
+      2
+    )}`
+  )
+  const currentCompletionRate = (
+    (completedCurrentOrders.length /
+      (nonCompletedCurrentOrders.length + completedCurrentOrders.length)) *
+    100
+  ).toFixed(2)
+  const previousCompletionRate = (
+    (completedPreviousOrders.length /
+      (nonCompletedPreviousOrders.length + completedPreviousOrders.length)) *
+    100
+  ).toFixed(2)
+  return {
+    orders,
+    ordersCount,
+    currentMonthGross,
+    previousMonthGross,
+    currentMonthCount,
+    previousMonthCount,
+    currentCompletionRate,
+    previousCompletionRate,
+  }
+}
+
+export default function Example() {
+  const {
+    orders,
+    ordersCount,
+    currentMonthGross,
+    previousMonthGross,
+    currentMonthCount,
+    previousMonthCount,
+    currentCompletionRate,
+    previousCompletionRate,
+  } = useLoaderData<LoaderData>()
+
+  const navigate = useNavigate()
+
+  const [searchParams] = useSearchParams()
+  const page = parseInt(searchParams.get('page') || '0')
+
+  const cards = [
+    {
+      name: 'Total Gross Sales',
+      stat: currentMonthGross,
+      previousStat: previousMonthGross,
+      change: ((currentMonthGross / previousMonthGross) * 100).toFixed(2),
+      changeType:
+        (currentMonthGross / previousMonthGross) * 100 > 0
+          ? 'increase'
+          : 'decrease',
+    },
+    {
+      name: 'Average Completed Order Count',
+      stat: currentMonthCount,
+      previousStat: previousMonthCount,
+      change: ((currentMonthCount / previousMonthCount) * 100).toFixed(2),
+      changeType:
+        (currentMonthCount / previousMonthCount) * 100 > 0
+          ? 'increase'
+          : 'decrease',
+    },
+    {
+      name: 'Average Order Completion Rate',
+      stat: `${currentCompletionRate}%`,
+      previousStat: `${previousCompletionRate}%`,
+      change: currentCompletionRate - previousCompletionRate,
+      changeType:
+        currentCompletionRate - previousCompletionRate > 0
+          ? 'increase'
+          : 'decrease',
+    },
+  ]
+
+  const graphData = [
+    {
+      name: 'Jan',
+      sales: 5000,
+    },
+    {
+      name: 'Feb',
+      sales: 6000,
+    },
+    {
+      name: 'Mar',
+      sales: 4000,
+    },
+    {
+      name: 'Apr',
+      sales: 3000,
+    },
+    {
+      name: 'May',
+      sales: previousMonthGross,
+    },
+    {
+      name: 'Jun',
+      sales: currentMonthGross,
+    },
+  ]
   return (
     <>
       {/*
@@ -191,8 +270,37 @@ export default function Example() {
                 Overview
               </h2>
               <div className='mt-4 flex justify-between'>
-                <div className='h-52 w-full'>{/* <Graph /> */}</div>
+                <div className='h-64 w-full'>
+                  <ResponsiveContainer width='100%' height='100%'>
+                    <LineChart
+                      data={graphData}
+                      margin={{
+                        top: 5,
+                        right: 30,
+                        left: 20,
+                        bottom: 5,
+                      }}
+                    >
+                      <CartesianGrid strokeDasharray='3 3' />
+                      <XAxis dataKey='name' />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line
+                        type='monotone'
+                        dataKey='sales'
+                        stroke='#ef4444'
+                        activeDot={{ r: 8 }}
+                        strokeWidth={2}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
+
+              <h2 className='my-8 text-xl font-bold leading-6 text-gray-900 '>
+                Current month statistics
+              </h2>
               <div className='mt-5 grid grid-cols-1 divide-y divide-gray-200 overflow-hidden rounded-lg bg-white shadow md:grid-cols-3 md:divide-y-0 md:divide-x'>
                 {/* Card */}
                 {cards.map((card) => (
@@ -227,14 +335,13 @@ export default function Example() {
                             aria-hidden='true'
                           />
                         )}
-
                         <span className='sr-only'>
                           {card.changeType === 'increase'
                             ? 'Increased'
                             : 'Decreased'}{' '}
                           by
                         </span>
-                        {card.change}
+                        {card.change}%
                       </div>
                     </dd>
                   </div>
@@ -242,152 +349,187 @@ export default function Example() {
               </div>
             </div>
 
-            <h2 className='mt-8 px-4 text-xl font-bold leading-6 text-gray-900 sm:px-6 lg:px-8'>
+            <h2 className='my-8 px-4 text-xl font-bold leading-6 text-gray-900 sm:px-6 lg:px-8'>
               Completed orders
             </h2>
 
-            {/* Activity list (smallest breakpoint only) */}
-            <div className='shadow sm:hidden'>
-              <ul
-                role='list'
-                className='mt-2 divide-y divide-gray-200 overflow-hidden shadow sm:hidden'
-              >
-                {transactions.map((transaction) => (
-                  <li key={transaction.id}>
-                    <a
-                      href={transaction.href}
-                      className='block bg-white px-4 py-4 hover:bg-gray-50'
-                    >
-                      <span className='flex items-center space-x-4'>
-                        <span className='flex flex-1 space-x-2 truncate'>
-                          <span className='flex flex-col truncate text-sm text-gray-500'>
-                            <span className='truncate'>{transaction.name}</span>
-                            <span>
-                              <span className='font-medium text-gray-900'>
-                                {transaction.amount}
-                              </span>{' '}
-                            </span>
-                            <time dateTime={transaction.datetime}>
-                              {transaction.date}
-                            </time>
-                          </span>
-                        </span>
-                      </span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-
-              <nav
-                className='flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3'
-                aria-label='Pagination'
-              >
-                <div className='flex flex-1 justify-between'>
-                  <a
-                    href='#'
-                    className='relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-500'
-                  >
-                    Previous
-                  </a>
-                  <a
-                    href='#'
-                    className='relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-500'
-                  >
-                    Next
-                  </a>
-                </div>
-              </nav>
-            </div>
-
             {/* Activity table (small breakpoint and up) */}
-            <div className='hidden sm:block'>
-              <div className='px-4 sm:px-6 lg:px-8'>
-                <div className='mt-2 flex flex-col'>
-                  <div className='min-w-full overflow-hidden overflow-x-auto align-middle shadow sm:rounded-lg'>
+            <div className='flex flex-col px-4'>
+              <div className='-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8'>
+                <div className='inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8'>
+                  <div className='overflow-hidden border-b border-gray-200 shadow sm:rounded-lg'>
                     <table className='min-w-full divide-y divide-gray-200'>
-                      <thead>
+                      <thead className='bg-gray-50'>
                         <tr>
-                          <th className='bg-gray-50 px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'>
+                          <th
+                            scope='col'
+                            className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'
+                          >
                             Order Id
                           </th>
-                          <th className='bg-gray-50 px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500'>
-                            Amount
+                          <th
+                            scope='col'
+                            className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'
+                          >
+                            Customer
                           </th>
-                          <th className='hidden bg-gray-50 px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 md:block'>
+                          <th
+                            scope='col'
+                            className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'
+                          >
+                            Address
+                          </th>
+                          <th
+                            scope='col'
+                            className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'
+                          >
+                            Order Items
+                          </th>
+                          <th
+                            scope='col'
+                            className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'
+                          >
                             Status
                           </th>
-                          <th className='bg-gray-50 px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500'>
+                          <th
+                            scope='col'
+                            className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'
+                          >
                             Date
+                          </th>
+                          <th scope='col' className='relative px-6 py-3'>
+                            <span className='sr-only'>Action</span>
                           </th>
                         </tr>
                       </thead>
                       <tbody className='divide-y divide-gray-200 bg-white'>
-                        {transactions.map((transaction) => (
-                          <tr key={transaction.id} className='bg-white'>
-                            <td className='w-full max-w-0 whitespace-nowrap px-6 py-4 text-sm text-gray-900'>
-                              <div className='flex'>
+                        {orders.map((order) => {
+                          return (
+                            <tr
+                              className='hover:cursor-pointer hover:bg-red-50'
+                              key={order.id}
+                              onClick={() => {
+                                navigate(`/manage-orders/${order.id}`)
+                              }}
+                            >
+                              <td className='whitespace-nowrap px-6 py-4'>
+                                <div className='flex '>
+                                  <div className='text-sm font-medium text-gray-900'>
+                                    {order.id}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className='whitespace-nowrap px-6 py-4'>
+                                <div className='flex items-center'>
+                                  <div className=''>
+                                    <div className='text-sm font-medium text-gray-900'>
+                                      {order?.User?.name || 'GUEST'}
+                                    </div>
+                                    <div className='text-sm text-gray-500'>
+                                      {order?.User?.email || ''}
+                                    </div>
+                                    <div className='text-sm text-gray-500'>
+                                      {order?.User?.username || ''}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className='whitespace-nowrap px-6 py-4'>
+                                <div className='flex items-center '>
+                                  <div className=''>
+                                    <div className='text-sm font-medium text-gray-900'>
+                                      {order?.Address?.address || 'No address'}
+                                    </div>
+                                    <div className='text-sm text-gray-500'>
+                                      {order?.Address?.city || ''}
+                                    </div>
+                                    <div className='text-sm text-gray-500'>
+                                      {order?.Address?.province || ''}
+                                    </div>
+                                    <div className='text-sm text-gray-500'>
+                                      {order?.Address?.contactPerson || ''}
+                                    </div>
+                                    <div className='text-sm text-gray-500'>
+                                      {order?.Address?.phoneNumber || ''}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className='whitespace-nowrap px-6 py-4'>
+                                {order?.orderItems?.map((orderItem) => {
+                                  return (
+                                    <div
+                                      key={orderItem.id}
+                                      className='text-sm font-medium text-gray-900'
+                                    >
+                                      {orderItem.quantity || ''}x{' '}
+                                      {orderItem.product.name}
+                                    </div>
+                                  )
+                                })}
+                              </td>
+                              <td className='whitespace-nowrap px-6 py-4 font-medium text-gray-900'>
+                                {order.status.replace(/_/g, ' ')}
+                              </td>
+                              <td className='whitespace-nowrap px-6 py-4 font-medium text-gray-900'>
+                                {new Date(
+                                  order?.paidAt || ''
+                                ).toLocaleDateString()}
+                              </td>
+                              <td className='whitespace-nowrap px-6 py-4 text-right text-sm font-medium'>
                                 <a
-                                  href={transaction.href}
-                                  className='group inline-flex space-x-2 truncate text-sm'
+                                  href='#'
+                                  className='text-red-500 hover:text-red-600'
                                 >
-                                  <CashIcon
-                                    className='h-5 w-5 flex-shrink-0 text-gray-400 group-hover:text-gray-500'
-                                    aria-hidden='true'
-                                  />
-                                  <p className='truncate text-gray-500 group-hover:text-gray-900'>
-                                    {transaction.name}
-                                  </p>
+                                  Edit
                                 </a>
-                              </div>
-                            </td>
-                            <td className='whitespace-nowrap px-6 py-4 text-right text-sm text-gray-500'>
-                              <span className='font-medium text-gray-900'>
-                                {transaction.amount}{' '}
-                              </span>
-                            </td>
-                            <td className='hidden whitespace-nowrap px-6 py-4 text-sm text-gray-500 md:block'>
-                              <span
-                                className={classNames(
-                                  'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize'
-                                )}
-                              >
-                                {transaction.status}
-                              </span>
-                            </td>
-                            <td className='whitespace-nowrap px-6 py-4 text-right text-sm text-gray-500'>
-                              <time dateTime={transaction.datetime}>
-                                {transaction.date}
-                              </time>
-                            </td>
-                          </tr>
-                        ))}
+                              </td>
+                            </tr>
+                          )
+                        })}
                       </tbody>
                     </table>
-                    {/* Pagination */}
                     <nav
                       className='flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6'
                       aria-label='Pagination'
                     >
                       <div className='hidden sm:block'>
                         <p className='text-sm text-gray-700'>
-                          Showing <span className='font-medium'>1</span> to{' '}
-                          <span className='font-medium'>10</span> of{' '}
-                          <span className='font-medium'>20</span> results
+                          Showing{' '}
+                          <span className='font-medium'>
+                            {(page + 1) * 10 - 9}
+                          </span>{' '}
+                          to{' '}
+                          <span className='font-medium'>
+                            {(page + 1) * 10 > ordersCount
+                              ? ordersCount
+                              : (page + 1) * 10}
+                          </span>{' '}
+                          of <span className='font-medium'>{ordersCount}</span>{' '}
+                          results
                         </p>
                       </div>
                       <div className='flex flex-1 justify-between sm:justify-end'>
-                        <a
-                          href='#'
-                          className='relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50'
+                        <Link
+                          to={`?page=${page - 1}`}
+                          className={
+                            page < 1
+                              ? `hidden`
+                              : `relative inline-flex  items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50`
+                          }
                         >
                           Previous
-                        </a>
-                        <a
-                          href='#'
-                          className='relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50'
+                        </Link>
+                        <Link
+                          to={`?page=${page + 1}`}
+                          className={
+                            page + 1 > ordersCount / 10
+                              ? 'hidden'
+                              : `relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50`
+                          }
                         >
                           Next
-                        </a>
+                        </Link>
                       </div>
                     </nav>
                   </div>

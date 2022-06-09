@@ -1,3 +1,5 @@
+import { useLoaderData, Link, useActionData } from '@remix-run/react'
+import { LoaderFunction, ActionFunction, redirect } from '@remix-run/node'
 import {
   Address,
   Order,
@@ -5,19 +7,31 @@ import {
   Product,
   Role,
   Status,
+  User,
 } from '@prisma/client'
-import { authenticator } from '~/services/auth.server'
-import { LoaderFunction, redirect } from '@remix-run/node'
-
-import {
-  createPayment,
-  retrievePaymentIntent,
-  retrieveSource,
-} from '~/services/paymongo.server'
 import { db } from '~/utils/db.server'
-import { Link, useLoaderData } from '@remix-run/react'
+import { z } from 'zod'
+import { zfd } from 'zod-form-data'
+import { withZod } from '@remix-validated-form/with-zod'
+import {
+  FieldErrors,
+  ValidatedForm,
+  validationError,
+} from 'remix-validated-form'
+import { Input } from '~/components/Input'
+import { authenticator } from '~/services/auth.server'
+import { StatusSelect } from '~/components/StatusSelect'
+import Autocomplete from '~/components/Autocomplete'
+import { RiderAutocomplete } from '~/components/RiderAutocomplete'
+import { useState } from 'react'
+import DeleteOrderModal from '~/components/DeleteOrderModal'
+import { RiderStatusSelect } from '~/components/RiderStatusSelect'
 
-/* This example requires Tailwind CSS v2.0+ */
+const baseSchema = z.object({
+  status: zfd.text(z.string()),
+})
+
+export const orderValidator = withZod(baseSchema)
 
 interface OrderItemData extends OrderItem {
   product: Product
@@ -27,21 +41,57 @@ interface OrderData extends Order {
   Address: Address
   orderItems: OrderItemData[]
 }
-interface LoaderData {
+
+export const action: ActionFunction = async ({ request, params }) => {
+  const user = await authenticator.isAuthenticated(request, {
+    failureRedirect: '/signin',
+  })
+  const { role } = user
+  if (role !== Role.RIDER) {
+    return redirect('/unauthorized')
+  }
+
+  const { orderId } = params
+  const formData = await request.formData()
+
+  const status = formData.get('status') as string
+
+  const order = await db.order.findFirst({
+    where: {
+      id: orderId,
+    },
+  })
+  await db.order.update({
+    where: {
+      id: orderId,
+    },
+    data: {
+      status: (status as Status) || order?.status,
+    },
+  })
+
+  return null
+}
+
+type LoaderData = {
+  error: FieldErrors | null
   order: OrderData
 }
 export const loader: LoaderFunction = async ({ params, request }) => {
   const { orderId } = params
   const user = await authenticator.isAuthenticated(request)
 
-  if (user?.role === Role.ADMIN || user?.role === Role.RIDER) {
+  if (!user?.role) {
+    return redirect('/signin')
+  }
+
+  if (user?.role !== Role.RIDER) {
     return redirect('/unauthorized')
   }
 
   const order = await db.order.findFirst({
     where: {
       id: orderId,
-      userId: user?.id,
     },
     include: {
       Address: true,
@@ -53,101 +103,66 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     },
   })
 
-  if (!order) redirect('/cart')
-
-  const productIds = order?.orderItems.map((orderItem) => orderItem.productId)
-
-  if (order?.sourceId && !order?.paidAt) {
-    const res = await retrieveSource(order?.sourceId)
-    if (!res.status) {
-      return redirect('/cart')
-    }
-
-    if (res.status === 'pending') {
-      return redirect(res.checkoutUrl)
-    } else if (res.status === 'chargeable') {
-      const paymentReference = await createPayment(
-        order.sourceId,
-        order?.amount
-      )
-      await db.order.update({
-        where: {
-          id: orderId,
-        },
-        data: {
-          status: Status.PACKAGING,
-          paymentReference: paymentReference,
-          paidAt: new Date(),
-        },
-      })
-
-      await db.product.updateMany({
-        where: {
-          id: {
-            in: productIds || [],
-          },
-        },
-        data: {
-          stock: { decrement: 1 },
-        },
-      })
-      return redirect(`/order-success/${orderId}`)
-    }
-  }
-
-  if (order?.paymentIntentId && !order?.paidAt) {
-    const res = await retrievePaymentIntent(order?.paymentIntentId)
-
-    if (res.status === 'paid') {
-      const updatedOrder = await db.order.update({
-        where: {
-          id: orderId,
-        },
-        data: {
-          status: Status.PACKAGING,
-          paymentReference: res.paymentReference,
-          paidAt: new Date(),
-        },
-      })
-
-      await db.product.updateMany({
-        where: {
-          id: {
-            in: productIds || [],
-          },
-        },
-        data: {
-          stock: { decrement: 1 },
-        },
-      })
-      return redirect(`/order-success/${orderId}`)
-    } else {
-      return redirect('/checkout?paymentFailed=true')
-    }
-  }
+  if (!order) redirect('/manage-orders')
 
   return { order }
 }
 
 export default function Example() {
-  const { order } = useLoaderData<LoaderData>()
+  const loaderData = useLoaderData<LoaderData>()
+  const { order } = loaderData
+  const [confirmingDeletion, setConfirmingDeletion] = useState(false)
+
   return (
     <div className='bg-white'>
+      <DeleteOrderModal
+        {...{ confirmingDeletion, setConfirmingDeletion }}
+        orderId={order?.id || ''}
+      />
       <div className='mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8'>
-        <div className='max-w-xl'>
-          <h1 className='text-sm font-semibold uppercase tracking-wide text-red-500'>
-            Order details
+        <div className='max-w-20 '>
+          <h1 className='mt-2 text-4xl font-extrabold tracking-tight sm:text-5xl'>
+            Edit order
           </h1>
-          <p className='mt-2 text-4xl font-extrabold tracking-tight sm:text-5xl'>
-            It's on the way!
-          </p>
-          <p className='mt-2 text-base text-gray-500'>
-            Your order has been placed and will be delivered to you soon.
-          </p>
-
-          <dl className='mt-12 text-sm font-medium'>
+          <dl className='mt-6 mb-4 text-sm font-medium'>
+            <h2 className='text-lg text-gray-900'>Editable details</h2>
+          </dl>
+          <ValidatedForm
+            method='post'
+            validator={orderValidator}
+            className='space-y-4'
+          >
+            <RiderStatusSelect
+              name='status'
+              label='Status'
+              value={order.status}
+              className={`${loaderData?.error?.message && 'border-red-500'}`}
+            />
+            <div className=' flex justify-end border-b border-gray-200 pb-4'>
+              <button
+                type='submit'
+                className='inline-flex w-auto justify-end rounded-md border border-transparent bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:w-auto sm:text-sm'
+              >
+                Submit
+              </button>
+            </div>
+          </ValidatedForm>
+          <dl className='mt-6 text-sm font-medium'>
+            <h2 className='text-lg text-gray-900'>Other details</h2>
+          </dl>
+          <dl className='mt-6 text-sm font-medium'>
             <dt className='text-gray-900'>Order ID</dt>
             <dd className='mt-2 text-red-500'>{order?.id || ''}</dd>
+          </dl>
+          <dl className='mt-6 text-sm font-medium'>
+            <dt className='text-gray-900'>Paid at</dt>
+            <dd className='mt-2 text-red-500'>
+              {new Date(order?.paidAt || '')?.toLocaleDateString('en-us', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              }) || ''}
+            </dd>
           </dl>
           <dl className='mt-6 text-sm font-medium'>
             <dt className='text-gray-900'>Order status</dt>
@@ -161,14 +176,15 @@ export default function Example() {
           <h2 className='sr-only'>Your order</h2>
 
           <h3 className='sr-only'>Items</h3>
-          {order.orderItems.map((orderItem: OrderItemData) => {
-            const { product } = orderItem
+          {order.orderItems.map((orderItem) => {
+            const quantity = orderItem.quantity
+            const product = orderItem.product
             return (
               <div
-                key={orderItem.id}
+                key={product.id}
                 className='flex space-x-6 border-b border-gray-200 py-10'
               >
-                <Link to={`/products/${orderItem?.productId}`}>
+                <Link to={`/products/${product?.id}`}>
                   <div className='h-20 w-20 flex-none rounded-lg bg-gray-100 object-cover object-center sm:h-40 sm:w-40'>
                     <img loading='lazy' src={product?.imageUrl || ''} />
                   </div>
@@ -189,13 +205,11 @@ export default function Example() {
                     <dl className='flex space-x-4 divide-x divide-gray-200 text-sm sm:space-x-6'>
                       <div className='flex'>
                         <dt className='font-medium text-gray-900'>Quantity</dt>
-                        <dd className='ml-2 text-gray-700'>
-                          {orderItem.quantity}
-                        </dd>
+                        <dd className='ml-2 text-gray-700'>{quantity}</dd>
                       </div>
                       <div className='flex pl-4 sm:pl-6'>
                         <dt className='font-medium text-gray-900'>Price</dt>
-                        <dd className='ml-2 text-gray-700'>{product.price}</dd>
+                        <dd className='ml-2 text-gray-700'>₱{product.price}</dd>
                       </div>
                     </dl>
                   </div>
@@ -237,7 +251,7 @@ export default function Example() {
             <dl className='space-y-6 border-t border-gray-200 pt-10 text-sm'>
               <div className='flex justify-between'>
                 <dt className='font-medium text-gray-900'>Subtotal</dt>
-                <dd className='text-gray-700'>₱50</dd>
+                <dd className='text-gray-700'>₱{order.amount}</dd>
               </div>
               <div className='flex justify-between'>
                 <dt className='flex font-medium text-gray-900'>
@@ -254,7 +268,7 @@ export default function Example() {
               </div>
               <div className='flex justify-between'>
                 <dt className='font-medium text-gray-900'>Total</dt>
-                <dd className='text-gray-900'>₱50</dd>
+                <dd className='text-gray-900'>₱{order.amount}</dd>
               </div>
             </dl>
           </div>

@@ -10,7 +10,7 @@ import {
 import { Link, LoaderFunction } from 'remix'
 import { Order, Role, User, OrderItem } from '@prisma/client'
 import { ArrowRightIcon } from '@heroicons/react/solid'
-import AccountDropdown from './AccountDropdown'
+import AccountDropdown, { adminMenuItems } from './AccountDropdown'
 import { authenticator } from '~/services/auth.server'
 import { db } from '~/utils/db.server'
 import { getSession } from '~/services/session.server'
@@ -92,14 +92,15 @@ export default function Navbar({
               </Tab.Group>
 
               <div className='space-y-6 border-t border-gray-200 py-6 px-4'>
-                {user?.role === Role.RIDER ? (
+                {user?.role === Role.RIDER && (
                   <Link
                     to={'/assigned-orders'}
                     className='-m-2 block p-2 font-medium text-gray-900'
                   >
                     Assgined Orders
                   </Link>
-                ) : (
+                )}
+                {(user?.role === Role.CUSTOMER || !user?.role) &&
                   navigation.pages.map((page) => (
                     <div key={page.name} className='flow-root'>
                       <Link
@@ -109,28 +110,49 @@ export default function Navbar({
                         {page.name}
                       </Link>
                     </div>
-                  ))
-                )}
+                  ))}
+                {user?.role === Role.ADMIN &&
+                  adminMenuItems.map((a) => (
+                    <Link
+                      to={a.route}
+                      className='-m-2 block p-2 font-medium text-gray-900'
+                    >
+                      {a.label}
+                    </Link>
+                  ))}
               </div>
 
-              <div className='space-y-6 border-t border-gray-200 py-6 px-4'>
-                <div className='flow-root'>
-                  <Link
-                    to='#'
-                    className='-m-2 block p-2 font-medium text-gray-900'
-                  >
-                    Sign in
-                  </Link>
+              {!user?.id ? (
+                <div className='space-y-6 border-t border-gray-200 py-6 px-4'>
+                  <div className='flow-root'>
+                    <Link
+                      to='/signin'
+                      className='-m-2 block p-2 font-medium text-gray-900'
+                    >
+                      Sign in
+                    </Link>
+                  </div>
+                  <div className='flow-root'>
+                    <Link
+                      to='signup'
+                      className='-m-2 block p-2 font-medium text-gray-900'
+                    >
+                      Sign Up
+                    </Link>
+                  </div>
                 </div>
-                <div className='flow-root'>
-                  <Link
-                    to='#'
-                    className='-m-2 block p-2 font-medium text-gray-900'
-                  >
-                    Sign Up
-                  </Link>
+              ) : (
+                <div className='space-y-6 border-t border-gray-200 py-6 px-4'>
+                  <div className='flow-root'>
+                    <Link
+                      to='/signout'
+                      className='-m-2 block p-2 font-medium text-gray-900'
+                    >
+                      Sign out
+                    </Link>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className='space-y-6 border-t border-gray-200 py-6 px-4'></div>
             </div>

@@ -3,14 +3,16 @@ import {
   Order,
   OrderItem,
   Product,
+  Role,
   Status,
   User,
 } from '@prisma/client'
-import { LoaderFunction } from '@remix-run/node'
+import { LoaderFunction, redirect } from '@remix-run/node'
 import { db } from '~/utils/db.server'
 import { useNavigate } from 'react-router'
-import { Outlet, useLoaderData, useSearchParams } from '@remix-run/react'
+import { useLoaderData, useSearchParams } from '@remix-run/react'
 import { Link } from 'react-router-dom'
+import { authenticator } from '~/services/auth.server'
 
 interface OrderItemData extends OrderItem {
   product: Product
@@ -27,6 +29,11 @@ interface LoaderData {
 }
 
 export const loader: LoaderFunction = async ({ request }) => {
+  const user = await authenticator.isAuthenticated(request, {
+    failureRedirect: '/signin',
+  })
+  if (user?.role !== Role.RIDER) return redirect('/unauthorized')
+
   const url = new URL(request.url)
   const page = parseInt(url?.searchParams?.get('page') || '0')
   const orders = await db.order.findMany({
@@ -35,6 +42,9 @@ export const loader: LoaderFunction = async ({ request }) => {
     where: {
       status: {
         not: Status.IN_CART,
+      },
+      riderId: {
+        equals: user.id,
       },
     },
     include: {
@@ -56,13 +66,16 @@ export const loader: LoaderFunction = async ({ request }) => {
       status: {
         not: Status.IN_CART,
       },
+      riderId: {
+        equals: user.id,
+      },
     },
   })
 
   return { orders, ordersCount }
 }
 
-export default function ManageOrdersPage() {
+export default function AssignedOrdersPage() {
   const { orders, ordersCount } = useLoaderData<LoaderData>()
   const [searchParams] = useSearchParams()
   const page = parseInt(searchParams.get('page') || '0')
@@ -72,7 +85,7 @@ export default function ManageOrdersPage() {
     <>
       <div className=' bg-white px-4 py-5 pt-24 sm:px-6'>
         <h3 className='text-3xl font-extrabold leading-6 text-gray-900'>
-          Manage Orders
+          Assigned Orders
         </h3>
         <p className='mt-3 text-sm text-gray-500'>
           View, edit, or delete orders.
@@ -133,7 +146,7 @@ export default function ManageOrdersPage() {
                         className='hover:cursor-pointer hover:bg-red-50'
                         key={order.id}
                         onClick={() => {
-                          navigate(`/manage-orders/${order.id}`)
+                          navigate(`/assigned-orders/${order.id}`)
                         }}
                       >
                         <td className='whitespace-nowrap px-6 py-4'>

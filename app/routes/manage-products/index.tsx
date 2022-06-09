@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react'
 import {
   ActionFunction,
   json,
+  Link,
   LoaderFunction,
   redirect,
   useLoaderData,
+  useSearchParams,
 } from 'remix'
 import { validationError } from 'remix-validated-form'
 import invariant from 'tiny-invariant'
@@ -167,19 +169,27 @@ export let loader: LoaderFunction = async ({ request }) => {
     return redirect('/unauthorized')
   }
 
+  const url = new URL(request.url)
+  const page = parseInt(url?.searchParams?.get('page') || '0')
+
+  const productsCount = await db.product.count()
   const products = await db.product.findMany({
     take: 10,
+    skip: page * 10,
     orderBy: { updatedAt: 'desc' },
   })
 
-  return json({ products })
+  return json({ products, productsCount })
 }
 
 export default function ManageProductsRoute() {
   const [openSlideOver, setOpenSlideOver] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
 
-  const { products } = useLoaderData()
+  const { products, productsCount } = useLoaderData()
+
+  const [searchParams] = useSearchParams()
+  const page = parseInt(searchParams.get('page') || '0')
 
   useEffect(() => {
     if (!openSlideOver) {
@@ -338,6 +348,47 @@ export default function ManageProductsRoute() {
                   ))}
                 </tbody>
               </table>
+              <nav
+                className='flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6'
+                aria-label='Pagination'
+              >
+                <div className='hidden sm:block'>
+                  <p className='text-sm text-gray-700'>
+                    Showing{' '}
+                    <span className='font-medium'>{(page + 1) * 10 - 9}</span>{' '}
+                    to{' '}
+                    <span className='font-medium'>
+                      {(page + 1) * 10 > productsCount
+                        ? productsCount
+                        : (page + 1) * 10}
+                    </span>{' '}
+                    of <span className='font-medium'>{productsCount}</span>{' '}
+                    results
+                  </p>
+                </div>
+                <div className='flex flex-1 justify-between sm:justify-end'>
+                  <Link
+                    to={`?page=${page - 1}`}
+                    className={
+                      page < 1
+                        ? `hidden`
+                        : `relative inline-flex  items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50`
+                    }
+                  >
+                    Previous
+                  </Link>
+                  <Link
+                    to={`?page=${page + 1}`}
+                    className={
+                      page + 1 > productsCount / 10
+                        ? 'hidden'
+                        : `relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50`
+                    }
+                  >
+                    Next
+                  </Link>
+                </div>
+              </nav>
             </div>
           </div>
         </div>

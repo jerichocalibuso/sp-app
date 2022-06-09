@@ -6,9 +6,11 @@ import { useState } from 'react'
 import {
   ActionFunction,
   json,
+  Link,
   LoaderFunction,
   redirect,
   useLoaderData,
+  useSearchParams,
 } from 'remix'
 import { validationError } from 'remix-validated-form'
 import invariant from 'tiny-invariant'
@@ -27,8 +29,10 @@ export let loader: LoaderFunction = async ({ request }) => {
   if (role !== Role.ADMIN) {
     return redirect('/unauthorized')
   }
-
+  const url = new URL(request.url)
+  const page = parseInt(url?.searchParams?.get('page') || '0')
   const users = await db.user.findMany({
+    skip: page * 10,
     take: 10,
     select: {
       id: true,
@@ -41,9 +45,11 @@ export let loader: LoaderFunction = async ({ request }) => {
     orderBy: { updatedAt: 'desc' },
   })
 
+  const usersCount = await db.user.count()
+
   const usersWithoutCurrentUser = users.filter((user) => user?.id !== id)
 
-  return json({ users: usersWithoutCurrentUser })
+  return json({ users: usersWithoutCurrentUser, usersCount })
 }
 
 export const validator = withZod(
@@ -101,8 +107,10 @@ export const action: ActionFunction = async ({ request }) => {
 export default function Example() {
   const [openSlideOver, setOpenSlideOver] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [searchParams] = useSearchParams()
+  const page = parseInt(searchParams.get('page') || '0')
 
-  const { users } = useLoaderData()
+  const { users, usersCount } = useLoaderData()
   return (
     <>
       <ManageUsersForm
@@ -203,6 +211,46 @@ export default function Example() {
                   ))}
                 </tbody>
               </table>
+              <nav
+                className='flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6'
+                aria-label='Pagination'
+              >
+                <div className='hidden sm:block'>
+                  <p className='text-sm text-gray-700'>
+                    Showing{' '}
+                    <span className='font-medium'>{(page + 1) * 10 - 9}</span>{' '}
+                    to{' '}
+                    <span className='font-medium'>
+                      {(page + 1) * 10 > usersCount
+                        ? usersCount
+                        : (page + 1) * 10}
+                    </span>{' '}
+                    of <span className='font-medium'>{usersCount}</span> results
+                  </p>
+                </div>
+                <div className='flex flex-1 justify-between sm:justify-end'>
+                  <Link
+                    to={`?page=${page - 1}`}
+                    className={
+                      page < 1
+                        ? `hidden`
+                        : `relative inline-flex  items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50`
+                    }
+                  >
+                    Previous
+                  </Link>
+                  <Link
+                    to={`?page=${page + 1}`}
+                    className={
+                      page + 1 > usersCount / 10
+                        ? 'hidden'
+                        : `relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50`
+                    }
+                  >
+                    Next
+                  </Link>
+                </div>
+              </nav>
             </div>
           </div>
         </div>

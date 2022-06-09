@@ -73,7 +73,9 @@ export default function OrderDetailsPage() {
           </dl>
           <dl className='mt-6 text-sm font-medium'>
             <dt className='text-gray-900'>Order status</dt>
-            <dd className='mt-2 text-red-500'>{order?.status || ''}</dd>
+            <dd className='mt-2 text-red-500'>
+              {order?.status?.replace(/_/g, ' ') || ''}
+            </dd>
           </dl>
         </div>
 
