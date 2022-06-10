@@ -259,7 +259,7 @@ export default function Example() {
               <h3 className='sr-only'>Description</h3>
 
               <p className='mb-2 text-base font-medium text-gray-900'>
-                {product.weight ? `${product.weight} per quantity` : null}
+                {product.weight ? `${product.weight}g per quantity` : null}
               </p>
               <p className='space-y-6 text-base text-gray-700'>
                 {product.description}
