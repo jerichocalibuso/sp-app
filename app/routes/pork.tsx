@@ -117,13 +117,11 @@ export const action: ActionFunction = async ({ request }) => {
     )
     if (existingProduct) {
       orderItems[existingProductIndex] = {
-        product,
         productId: product.id,
         quantity: existingProduct.quantity + 1,
       }
     } else {
       orderItems.push({
-        product,
         productId: product.id,
         quantity: 1,
       })

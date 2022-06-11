@@ -189,9 +189,19 @@ export const loader: LoaderFunction = async ({ request }) => {
     const session = await getSession(request)
     const orderItems = session.get('orderItems') || []
     let amount = 0
-    orderItems.forEach((orderItem: any) => {
+
+    const productIds = [
+      ...new Set(orderItems.map((o: any) => o?.productId || '')),
+    ] as string[]
+
+    const products = await db.product.findMany({
+      where: { id: { in: productIds || [] } },
+    })
+    orderItems.forEach(async (orderItem: any) => {
+      orderItem.product = products.find((p) => p.id === orderItem.productId)
       amount = amount + orderItem.product.price * orderItem.quantity
     })
+
     return { currentOrder: { orderItems: orderItems, amount } }
   }
 }
