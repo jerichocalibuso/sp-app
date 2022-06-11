@@ -334,7 +334,9 @@ export default function ManageProductsRoute() {
                       </td>
 
                       <td className='whitespace-nowrap px-6 py-4'>
-                        <div className='text-sm text-gray-900'>999</div>
+                        <div className='text-sm text-gray-900'>
+                          {product.stock}
+                        </div>
                       </td>
                       <td className='whitespace-nowrap px-6 py-4 text-sm text-gray-900'>
                         {product.brand}
