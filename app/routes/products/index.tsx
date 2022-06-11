@@ -25,7 +25,6 @@ export type Product = {
   brand: Brand
   category: Category
   imageUrl: string
-  imageAlt: string
   price: number
   weight: string
   description: string

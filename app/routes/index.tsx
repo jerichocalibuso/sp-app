@@ -25,7 +25,8 @@ import {
   XIcon,
 } from '@heroicons/react/outline'
 import { Brand, Category, Product } from './products'
-import { Link } from 'remix'
+import { Link, LoaderFunction, useLoaderData } from 'remix'
+import { db } from '~/utils/db.server'
 
 const navigation = {
   categories: [
@@ -82,56 +83,6 @@ const navigation = {
   pages: [{ name: 'Beef', href: '#' }],
 }
 
-const trendingProducts: Product[] = [
-  {
-    id: 2,
-    imageUrl: '/images/BF-chicken-breast-fillets-860g.jpeg',
-    imageAlt: 'BF-chicken-breast-fillets-860g',
-    name: 'Chicken Breasts Fillets',
-    weight: '860g',
-    brand: Brand.BOUNTY_FRESH,
-    category: Category.CHICKEN,
-    price: 100,
-    description:
-      'Lorem ipsum dolor sit amet consectetur adipisicing elit. Repellendus nemo illum dignissimos fugit obcaecati vel beatae? Numquam similique vitae inventore!',
-  },
-  {
-    id: 3,
-    imageUrl: '/images/BF-chicken-breasts-860g.jpeg',
-    imageAlt: 'BF-chicken-breasts-860g',
-    name: 'Chicken Breasts',
-    weight: '860g',
-    brand: Brand.BOUNTY_FRESH,
-    category: Category.CHICKEN,
-    price: 180,
-    description:
-      'Lorem ipsum dolor sit amet consectetur adipisicing elit. Repellendus nemo illum dignissimos fugit obcaecati vel beatae? Numquam similique vitae inventore!',
-  },
-  {
-    id: 4,
-    imageUrl: '/images/BF-chicken-leg-quarters-860g.jpeg',
-    imageAlt: 'BF-chicken-leg-quarters-860g',
-    name: 'Chicken Leg Quarters',
-    weight: '860g',
-    brand: Brand.BOUNTY_FRESH,
-    category: Category.CHICKEN,
-    price: 180,
-    description:
-      'Lorem ipsum dolor sit amet consectetur adipisicing elit. Repellendus nemo illum dignissimos fugit obcaecati vel beatae? Numquam similique vitae inventore!',
-  },
-  {
-    id: 5,
-    imageUrl: '/images/BF-chicken-nuggets-200g.jpeg',
-    imageAlt: 'BF-chicken-nuggets-200g',
-    name: 'Chicken Nuggets',
-    weight: '200g',
-    brand: Brand.BOUNTY_FRESH,
-    category: Category.CHICKEN,
-    price: 100,
-    description:
-      'Lorem ipsum dolor sit amet consectetur adipisicing elit. Repellendus nemo illum dignissimos fugit obcaecati vel beatae? Numquam similique vitae inventore!',
-  },
-]
 const categories = [
   {
     name: 'Chicken',
@@ -173,9 +124,16 @@ const testimonials = [
   },
 ]
 
+export const loader: LoaderFunction = async ({ params }) => {
+  const products = await db.product.findMany({
+    take: 4,
+  })
+  return products
+}
+
 export default function IndexPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-
+  const products = useLoaderData()
   return (
     <div className='bg-white'>
       <main>
@@ -243,7 +201,7 @@ export default function IndexPage() {
                   role='list'
                   className='mx-4 inline-flex space-x-8 sm:mx-6 lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-x-8 lg:space-x-0'
                 >
-                  {trendingProducts.map((product) => (
+                  {products.map((product: Product) => (
                     <li
                       key={product.id}
                       className='inline-flex w-64 flex-col text-center lg:w-auto '
@@ -252,7 +210,6 @@ export default function IndexPage() {
                         <div className='aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-md bg-gray-200'>
                           <img
                             src={product.imageUrl}
-                            alt={product.imageAlt}
                             className='h-full w-full object-cover object-center group-hover:opacity-75'
                           />
                         </div>

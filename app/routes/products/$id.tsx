@@ -32,7 +32,8 @@ import { Quantity } from '~/components/Quantity'
 import { db } from '~/utils/db.server'
 import { validationError } from 'remix-validated-form'
 import { authenticator } from '~/services/auth.server'
-import { Role, Status } from '@prisma/client'
+import { OrderItem, Role, Status } from '@prisma/client'
+import { commitSession, getSession } from '~/services/guest.server'
 
 export type Breadcrumb = {
   label: string
@@ -40,16 +41,13 @@ export type Breadcrumb = {
 }
 
 export const action: ActionFunction = async ({ request, params }) => {
+  const { id: productId } = params
   const user = await authenticator.isAuthenticated(request)
+
   if (user?.role === Role.RIDER || user?.role === Role.ADMIN) {
     return redirect('/unauthorized')
   }
 
-  if (!user?.role) {
-    return redirect('/signin')
-  }
-
-  const { id: productId } = params
   const product = await db.product.findFirst({
     where: {
       id: productId,
@@ -59,7 +57,7 @@ export const action: ActionFunction = async ({ request, params }) => {
   if (!product) {
     return null
   }
-  console.log(`product: ${JSON.stringify(product, null, 2)}`)
+
   if (user?.role === Role.CUSTOMER) {
     const currentOrder = await db.order.findFirst({
       where: {
@@ -128,6 +126,34 @@ export const action: ActionFunction = async ({ request, params }) => {
 
       return { order: updatedOrder }
     }
+  } else {
+    const session = await getSession(request)
+    const orderItems = session.get('orderItems') || []
+    const existingProduct = orderItems.find(
+      (orderItem: OrderItem) => orderItem.productId === product.id
+    )
+    const existingProductIndex = orderItems.findIndex(
+      (orderItem: OrderItem) => orderItem.productId === product.id
+    )
+    if (existingProduct) {
+      orderItems[existingProductIndex] = {
+        product,
+        productId: product.id,
+        quantity: existingProduct.quantity + 1,
+      }
+    } else {
+      orderItems.push({
+        product,
+        productId: product.id,
+        quantity: 1,
+      })
+    }
+    session.set('orderItems', orderItems)
+    return redirect(`/products/${productId}`, {
+      headers: {
+        'Set-Cookie': await commitSession(session),
+      },
+    })
   }
 }
 
