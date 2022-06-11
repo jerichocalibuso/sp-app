@@ -83,7 +83,18 @@ export const action: ActionFunction = async ({ request }) => {
     const session = await getSession(request)
     const orderItems = session.get('orderItems') || []
     let amount = 0
+    const productIds = [
+      ...new Set(orderItems.map((o: any) => o?.productId || '')),
+    ] as string[]
+
+    const products = await db.product.findMany({
+      where: { id: { in: productIds || [] } },
+    })
+
     orderItems.forEach((orderItem: any) => {
+      orderItem.product = products.find(
+        (p: any) => p.id === orderItem.productId
+      )
       amount = amount + orderItem.product.price * orderItem.quantity
     })
 
