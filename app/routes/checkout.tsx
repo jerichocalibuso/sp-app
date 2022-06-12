@@ -948,7 +948,7 @@ export default function Example() {
                     <Input
                       name='cardNumber'
                       label='Credit / debit card number'
-                      value='4343434343434345'
+                      defaultValue='4343434343434345'
                       type='text'
                       className={`${
                         loaderData?.error?.message && 'border-red-500'
@@ -960,7 +960,7 @@ export default function Example() {
                     <Input
                       name='nameOnCard'
                       label='Name on card'
-                      value='Cardholder Name'
+                      defaultValue='Cardholder Name'
                       type='text'
                       className={`${
                         loaderData?.error?.message && 'border-red-500'
@@ -973,7 +973,7 @@ export default function Example() {
                       name='expiration'
                       label='Expiration date (MM/YY)'
                       type='text'
-                      value='09/22'
+                      defaultValue='09/22'
                       className={`${
                         loaderData?.error?.message && 'border-red-500'
                       }`}
@@ -985,7 +985,7 @@ export default function Example() {
                       name='cvc'
                       label='CVC'
                       type='text'
-                      value='123'
+                      defaultValue='123'
                       className={`${
                         loaderData?.error?.message && 'border-red-500'
                       }`}
