@@ -103,7 +103,10 @@ const GoogleIcon = () => (
   </svg>
 )
 
-const SocialsButton: React.FC<SocialsButtonProps> = ({ provider, label }) => (
+export const SocialsButton: React.FC<SocialsButtonProps> = ({
+  provider,
+  label,
+}) => (
   <Form action={`/auth/${provider}`} method='post'>
     <button className='inline-flex w-full justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50'>
       <span className='sr-only'>{label}</span>
