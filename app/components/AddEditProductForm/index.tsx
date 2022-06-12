@@ -108,7 +108,7 @@ export default function AddEditProductForm({
                               name='name'
                               label='Name'
                               type='text'
-                              value={selectedProduct?.name || ''}
+                              defaultValue={selectedProduct?.name || ''}
                               autoComplete='name'
                               className={`${
                                 loaderData?.error?.message && 'border-red-500'
@@ -127,7 +127,9 @@ export default function AddEditProductForm({
                               name='price'
                               label='Price'
                               type='text'
-                              value={selectedProduct?.price?.toString() || ''}
+                              defaultValue={
+                                selectedProduct?.price?.toString() || ''
+                              }
                               className={`${
                                 loaderData?.error?.message && 'border-red-500'
                               }`}
@@ -136,7 +138,9 @@ export default function AddEditProductForm({
                               name='stock'
                               label='Stock'
                               type='text'
-                              value={selectedProduct?.stock?.toString() || ''}
+                              defaultValue={
+                                selectedProduct?.stock?.toString() || ''
+                              }
                               className={`${
                                 loaderData?.error?.message && 'border-red-500'
                               }`}
@@ -145,7 +149,9 @@ export default function AddEditProductForm({
                               name='weight'
                               label='Weight per Qty'
                               type='text'
-                              value={selectedProduct?.weight?.toString() || ''}
+                              defaultValue={
+                                selectedProduct?.weight?.toString() || ''
+                              }
                               className={`${
                                 loaderData?.error?.message && 'border-red-500'
                               }`}
@@ -167,7 +173,7 @@ export default function AddEditProductForm({
                               name='brand'
                               label='Brand'
                               type='text'
-                              value={selectedProduct?.brand || 'Camille'}
+                              defaultValue={selectedProduct?.brand || 'Camille'}
                               className={`${
                                 loaderData?.error?.message && 'border-red-500'
                               }`}
