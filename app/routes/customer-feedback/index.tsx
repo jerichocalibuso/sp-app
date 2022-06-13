@@ -1,69 +1,36 @@
-import {
-  Address,
-  Order,
-  OrderItem,
-  Product,
-  Status,
-  User,
-} from '@prisma/client'
+import { Feedback, Status, User } from '@prisma/client'
 import { LoaderFunction } from '@remix-run/node'
 import { db } from '~/utils/db.server'
 import { useNavigate } from 'react-router'
-import { Outlet, useLoaderData, useSearchParams } from '@remix-run/react'
+import { useLoaderData, useSearchParams } from '@remix-run/react'
 import { Link } from 'react-router-dom'
 
-interface OrderItemData extends OrderItem {
-  product: Product
+interface FeedbackData extends Feedback {
+  User: User
 }
 
-export interface OrderData extends Order {
-  orderItems: OrderItemData[]
-  User: User | null
-  Address: Address | null
-}
 interface LoaderData {
-  orders: OrderData[]
-  ordersCount: number
+  feedbacks: FeedbackData[]
+  feedbacksCount: number
 }
 
 export const loader: LoaderFunction = async ({ request }) => {
   const url = new URL(request.url)
   const page = parseInt(url?.searchParams?.get('page') || '0')
-  const orders = await db.order.findMany({
+  const feedbacks = await db.feedback.findMany({
     skip: page * 10,
     take: 10,
-    where: {
-      status: {
-        not: Status.IN_CART,
-      },
-    },
     include: {
-      Product: true,
       User: true,
-      Address: true,
-      orderItems: {
-        include: {
-          product: true,
-        },
-      },
-    },
-    orderBy: {
-      updatedAt: 'desc',
     },
   })
-  const ordersCount = await db.order.count({
-    where: {
-      status: {
-        not: Status.IN_CART,
-      },
-    },
-  })
+  const feedbacksCount = await db.feedback.count()
 
-  return { orders, ordersCount }
+  return { feedbacks, feedbacksCount }
 }
 
-export default function ManageOrdersPage() {
-  const { orders, ordersCount } = useLoaderData<LoaderData>()
+export default function ManageFeedbacksPage() {
+  const { feedbacks, feedbacksCount } = useLoaderData<LoaderData>()
   const [searchParams] = useSearchParams()
   const page = parseInt(searchParams.get('page') || '0')
   const navigate = useNavigate()
@@ -72,10 +39,10 @@ export default function ManageOrdersPage() {
     <>
       <div className=' bg-white px-4 py-5 pt-24 sm:px-6'>
         <h3 className='text-3xl font-extrabold leading-6 text-gray-900'>
-          Manage Orders
+          Manage Feedbacks
         </h3>
         <p className='mt-3 text-sm text-gray-500'>
-          View, edit, or delete orders.
+          View, edit, or delete feedbacks.
         </p>
       </div>
       <div className='flex flex-col px-4'>
@@ -89,7 +56,7 @@ export default function ManageOrdersPage() {
                       scope='col'
                       className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'
                     >
-                      Order Id
+                      Feedback Id
                     </th>
                     <th
                       scope='col'
@@ -97,49 +64,33 @@ export default function ManageOrdersPage() {
                     >
                       Customer
                     </th>
+
                     <th
                       scope='col'
                       className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'
                     >
-                      Address
+                      Created at
                     </th>
-                    <th
-                      scope='col'
-                      className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'
-                    >
-                      Order Items
-                    </th>
-                    <th
-                      scope='col'
-                      className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'
-                    >
-                      Status
-                    </th>
-                    <th
-                      scope='col'
-                      className='px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'
-                    >
-                      Date
-                    </th>
+
                     <th scope='col' className='relative px-6 py-3'>
                       <span className='sr-only'>Action</span>
                     </th>
                   </tr>
                 </thead>
                 <tbody className='divide-y divide-gray-200 bg-white'>
-                  {orders.map((order) => {
+                  {feedbacks.map((feedback) => {
                     return (
                       <tr
                         className='hover:cursor-pointer hover:bg-red-50'
-                        key={order.id}
+                        key={feedback.id}
                         onClick={() => {
-                          navigate(`/manage-orders/${order.id}`)
+                          navigate(`/customer-feedback/${feedback.id}`)
                         }}
                       >
                         <td className='whitespace-nowrap px-6 py-4'>
                           <div className='flex '>
                             <div className='text-sm font-medium text-gray-900'>
-                              {order.id}
+                              {feedback.id}
                             </div>
                           </div>
                         </td>
@@ -147,63 +98,29 @@ export default function ManageOrdersPage() {
                           <div className='flex items-center'>
                             <div className=''>
                               <div className='text-sm font-medium text-gray-900'>
-                                {order?.User?.name || 'GUEST'}
+                                {feedback?.User?.name || 'GUEST'}
                               </div>
                               <div className='text-sm text-gray-500'>
-                                {order?.User?.email || ''}
+                                {feedback?.User?.email || ''}
                               </div>
                               <div className='text-sm text-gray-500'>
-                                {order?.User?.username || ''}
+                                {feedback?.User?.username || ''}
                               </div>
                             </div>
                           </div>
                         </td>
-                        <td className='whitespace-nowrap px-6 py-4'>
-                          <div className='flex items-center '>
-                            <div className=''>
-                              <div className='text-sm font-medium text-gray-900'>
-                                {order?.Address?.address || 'No address'}
-                              </div>
-                              <div className='text-sm text-gray-500'>
-                                {order?.Address?.city || ''}
-                              </div>
-                              <div className='text-sm text-gray-500'>
-                                {order?.Address?.province || ''}
-                              </div>
-                              <div className='text-sm text-gray-500'>
-                                {order?.Address?.contactPerson || ''}
-                              </div>
-                              <div className='text-sm text-gray-500'>
-                                {order?.Address?.phoneNumber || ''}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className='whitespace-nowrap px-6 py-4'>
-                          {order?.orderItems?.map((orderItem) => {
-                            return (
-                              <div
-                                key={orderItem.id}
-                                className='text-sm font-medium text-gray-900'
-                              >
-                                {orderItem.quantity || ''}x{' '}
-                                {orderItem.product.name}
-                              </div>
-                            )
-                          })}
-                        </td>
+
                         <td className='whitespace-nowrap px-6 py-4 font-medium text-gray-900'>
-                          {order.status.replace(/_/g, ' ')}
-                        </td>
-                        <td className='whitespace-nowrap px-6 py-4 font-medium text-gray-900'>
-                          {new Date(order?.paidAt || '').toLocaleDateString()}
+                          {new Date(
+                            feedback?.createdAt || ''
+                          ).toLocaleDateString()}
                         </td>
                         <td className='whitespace-nowrap px-6 py-4 text-right text-sm font-medium'>
                           <a
                             href='#'
                             className='text-red-500 hover:text-red-600'
                           >
-                            Edit
+                            View
                           </a>
                         </td>
                       </tr>
@@ -221,11 +138,11 @@ export default function ManageOrdersPage() {
                     <span className='font-medium'>{(page + 1) * 10 - 9}</span>{' '}
                     to{' '}
                     <span className='font-medium'>
-                      {(page + 1) * 10 > ordersCount
-                        ? ordersCount
+                      {(page + 1) * 10 > feedbacksCount
+                        ? feedbacksCount
                         : (page + 1) * 10}
                     </span>{' '}
-                    of <span className='font-medium'>{ordersCount}</span>{' '}
+                    of <span className='font-medium'>{feedbacksCount}</span>{' '}
                     results
                   </p>
                 </div>
@@ -240,10 +157,11 @@ export default function ManageOrdersPage() {
                   >
                     Previous
                   </Link>
+
                   <Link
                     to={`?page=${page + 1}`}
                     className={
-                      page + 1 >= ordersCount / 10
+                      page + 1 >= feedbacksCount / 10
                         ? 'hidden'
                         : `relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50`
                     }

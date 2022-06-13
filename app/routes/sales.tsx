@@ -523,7 +523,7 @@ export default function Example() {
                         <Link
                           to={`?page=${page + 1}`}
                           className={
-                            page + 1 > ordersCount / 10
+                            page + 1 >= ordersCount / 10
                               ? 'hidden'
                               : `relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50`
                           }

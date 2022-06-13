@@ -18,20 +18,21 @@ enum Role {
 }
 
 model User {
-  id             String    @id @default(uuid())
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id             String     @id @default(uuid())
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
   role           Role
-  username       String?   @unique
+  username       String?    @unique
   email          String?
   provider       String?
-  providerId     String?   @unique
+  providerId     String?    @unique
   password       String?
   contactNumber  String?
   name           String?
   profileIconUrl String?
   addresses      Address[]
   orders         Order[]
+  Feedback       Feedback[]
 }
 
 model Address {
@@ -120,4 +121,13 @@ model Product {
   Order       Order?      @relation(fields: [orderId], references: [id])
   orderId     String?
   OrderItem   OrderItem[]
+}
+
+model Feedback {
+  id        String   @id @default(uuid())
+  feedback  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User?    @relation(fields: [userId], references: [id])
+  userId    String?
 }

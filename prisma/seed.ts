@@ -1,5 +1,6 @@
 import {
   Category,
+  PaymentOption,
   PrismaClient,
   Product,
   Role,
@@ -14,137 +15,9 @@ async function seed() {
   const users = getUsers()
   await db.user.createMany({ data: users })
   const product = await db.product.findFirst({})
+  const ordersData = getOrders()
   await db.order.createMany({
-    data: [
-      {
-        amount: 5000,
-        status: Status.COMPLETED,
-        paidAt: new Date('01/02/2022'),
-        createdAt: new Date('01/02/2022'),
-        paymentOption: 'COD',
-      },
-      {
-        amount: 6000,
-        status: Status.COMPLETED,
-        paidAt: new Date('02/02/2022'),
-        createdAt: new Date('02/02/2022'),
-        paymentOption: 'COD',
-      },
-      {
-        amount: 4000,
-        status: Status.COMPLETED,
-        paidAt: new Date('03/02/2022'),
-        createdAt: new Date('03/02/2022'),
-        paymentOption: 'COD',
-      },
-      {
-        amount: 3000,
-        status: Status.COMPLETED,
-        paidAt: new Date('04/02/2022'),
-        createdAt: new Date('04/02/2022'),
-        paymentOption: 'COD',
-      },
-      {
-        amount: 2000,
-        status: Status.COMPLETED,
-        paidAt: new Date('05/02/2022'),
-        createdAt: new Date('05/02/2022'),
-        paymentOption: 'COD',
-      },
-      {
-        amount: 2000,
-        status: Status.COMPLETED,
-        paidAt: new Date('05/02/2022'),
-        createdAt: new Date('05/02/2022'),
-        paymentOption: 'COD',
-      },
-      {
-        amount: 2000,
-        status: Status.COMPLETED,
-        paidAt: new Date('05/02/2022'),
-        createdAt: new Date('05/02/2022'),
-        paymentOption: 'COD',
-      },
-
-      {
-        amount: 2000,
-        status: Status.CANCELLED,
-        paidAt: new Date('05/02/2022'),
-        createdAt: new Date('05/02/2022'),
-        paymentOption: 'COD',
-      },
-      {
-        amount: 2000,
-        status: Status.IN_CART,
-        paidAt: new Date('05/02/2022'),
-        createdAt: new Date('05/02/2022'),
-        paymentOption: 'COD',
-      },
-      {
-        amount: 2000,
-        status: Status.CANCELLED,
-        paidAt: new Date('05/02/2022'),
-        createdAt: new Date('05/02/2022'),
-        paymentOption: 'COD',
-      },
-      {
-        amount: 2000,
-        status: Status.IN_CART,
-        paidAt: new Date('05/02/2022'),
-        createdAt: new Date('05/02/2022'),
-        paymentOption: 'COD',
-      },
-      {
-        amount: 2000,
-        status: Status.COMPLETED,
-        paidAt: new Date('06/02/2022'),
-        createdAt: new Date('06/02/2022'),
-        paymentOption: 'COD',
-      },
-      {
-        amount: 2000,
-        status: Status.COMPLETED,
-        paidAt: new Date('06/02/2022'),
-        createdAt: new Date('06/02/2022'),
-        paymentOption: 'COD',
-      },
-      {
-        amount: 2000,
-        status: Status.COMPLETED,
-        paidAt: new Date('06/02/2022'),
-        createdAt: new Date('06/02/2022'),
-        paymentOption: 'COD',
-      },
-      {
-        amount: 2000,
-        status: Status.COMPLETED,
-        paidAt: new Date('06/02/2022'),
-        createdAt: new Date('06/02/2022'),
-        paymentOption: 'COD',
-      },
-      {
-        amount: 2000,
-        status: Status.COMPLETED,
-        paidAt: new Date('06/02/2022'),
-        createdAt: new Date('06/02/2022'),
-        paymentOption: 'COD',
-      },
-
-      {
-        amount: 2000,
-        status: Status.CANCELLED,
-        paidAt: new Date('05/02/2022'),
-        createdAt: new Date('05/02/2022'),
-        paymentOption: 'COD',
-      },
-      {
-        amount: 2000,
-        status: Status.IN_CART,
-        paidAt: new Date('05/02/2022'),
-        createdAt: new Date('05/02/2022'),
-        paymentOption: 'COD',
-      },
-    ],
+    data: ordersData,
   })
 
   const orders = await db.order.findMany({})
@@ -156,6 +29,17 @@ async function seed() {
         quantity: 10,
       },
     })
+  })
+
+  const user = await db.user.findFirst({
+    where: {
+      username: 'jericho_customer',
+    },
+  })
+
+  const feedbacks = getFeedbacks(user?.id || '')
+  await db.feedback.createMany({
+    data: feedbacks,
   })
 }
 
@@ -641,6 +525,194 @@ function getUsers() {
       username: 'sirjm_admin',
       password: '$2a$10$HKZoVmGdI.Hl6WAHRt2EheOHtI5vkUSpcTyx0RcvVT6/Cwhpagt6m',
       role: Role.ADMIN,
+    },
+  ]
+}
+
+function getOrders() {
+  return [
+    {
+      amount: 5000,
+      status: Status.COMPLETED,
+      paidAt: new Date('01/02/2022'),
+      createdAt: new Date('01/02/2022'),
+      paymentOption: PaymentOption.COD,
+    },
+    {
+      amount: 6000,
+      status: Status.COMPLETED,
+      paidAt: new Date('02/02/2022'),
+      createdAt: new Date('02/02/2022'),
+      paymentOption: PaymentOption.COD,
+    },
+    {
+      amount: 4000,
+      status: Status.COMPLETED,
+      paidAt: new Date('03/02/2022'),
+      createdAt: new Date('03/02/2022'),
+      paymentOption: PaymentOption.COD,
+    },
+    {
+      amount: 3000,
+      status: Status.COMPLETED,
+      paidAt: new Date('04/02/2022'),
+      createdAt: new Date('04/02/2022'),
+      paymentOption: PaymentOption.COD,
+    },
+    {
+      amount: 2000,
+      status: Status.COMPLETED,
+      paidAt: new Date('05/02/2022'),
+      createdAt: new Date('05/02/2022'),
+      paymentOption: PaymentOption.COD,
+    },
+    {
+      amount: 2000,
+      status: Status.COMPLETED,
+      paidAt: new Date('05/02/2022'),
+      createdAt: new Date('05/02/2022'),
+      paymentOption: PaymentOption.COD,
+    },
+    {
+      amount: 2000,
+      status: Status.COMPLETED,
+      paidAt: new Date('05/02/2022'),
+      createdAt: new Date('05/02/2022'),
+      paymentOption: PaymentOption.COD,
+    },
+
+    {
+      amount: 2000,
+      status: Status.CANCELLED,
+      paidAt: new Date('05/02/2022'),
+      createdAt: new Date('05/02/2022'),
+      paymentOption: PaymentOption.COD,
+    },
+    {
+      amount: 2000,
+      status: Status.IN_CART,
+      paidAt: new Date('05/02/2022'),
+      createdAt: new Date('05/02/2022'),
+      paymentOption: PaymentOption.COD,
+    },
+    {
+      amount: 2000,
+      status: Status.CANCELLED,
+      paidAt: new Date('05/02/2022'),
+      createdAt: new Date('05/02/2022'),
+      paymentOption: PaymentOption.COD,
+    },
+    {
+      amount: 2000,
+      status: Status.IN_CART,
+      paidAt: new Date('05/02/2022'),
+      createdAt: new Date('05/02/2022'),
+      paymentOption: PaymentOption.COD,
+    },
+    {
+      amount: 2000,
+      status: Status.COMPLETED,
+      paidAt: new Date('06/02/2022'),
+      createdAt: new Date('06/02/2022'),
+      paymentOption: PaymentOption.COD,
+    },
+    {
+      amount: 2000,
+      status: Status.COMPLETED,
+      paidAt: new Date('06/02/2022'),
+      createdAt: new Date('06/02/2022'),
+      paymentOption: PaymentOption.COD,
+    },
+    {
+      amount: 2000,
+      status: Status.COMPLETED,
+      paidAt: new Date('06/02/2022'),
+      createdAt: new Date('06/02/2022'),
+      paymentOption: PaymentOption.COD,
+    },
+    {
+      amount: 2000,
+      status: Status.COMPLETED,
+      paidAt: new Date('06/02/2022'),
+      createdAt: new Date('06/02/2022'),
+      paymentOption: PaymentOption.COD,
+    },
+    {
+      amount: 2000,
+      status: Status.COMPLETED,
+      paidAt: new Date('06/02/2022'),
+      createdAt: new Date('06/02/2022'),
+      paymentOption: PaymentOption.COD,
+    },
+
+    {
+      amount: 2000,
+      status: Status.CANCELLED,
+      paidAt: new Date('05/02/2022'),
+      createdAt: new Date('05/02/2022'),
+      paymentOption: PaymentOption.COD,
+    },
+    {
+      amount: 2000,
+      status: Status.IN_CART,
+      paidAt: new Date('05/02/2022'),
+      createdAt: new Date('05/02/2022'),
+      paymentOption: PaymentOption.COD,
+    },
+  ]
+}
+
+function getFeedbacks(userId: string) {
+  return [
+    {
+      userId,
+      feedback:
+        'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Alias cumque nihil atque quae inventore. Aliquam cupiditate repudiandae suscipit corporis natus.',
+    },
+    {
+      userId,
+      feedback:
+        'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Alias cumque nihil atque quae inventore. Aliquam cupiditate repudiandae suscipit corporis natus.',
+    },
+    {
+      userId,
+      feedback:
+        'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Alias cumque nihil atque quae inventore. Aliquam cupiditate repudiandae suscipit corporis natus.',
+    },
+    {
+      userId,
+      feedback:
+        'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Alias cumque nihil atque quae inventore. Aliquam cupiditate repudiandae suscipit corporis natus.',
+    },
+    {
+      userId,
+      feedback:
+        'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Alias cumque nihil atque quae inventore. Aliquam cupiditate repudiandae suscipit corporis natus.',
+    },
+    {
+      userId,
+      feedback:
+        'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Alias cumque nihil atque quae inventore. Aliquam cupiditate repudiandae suscipit corporis natus.',
+    },
+    {
+      userId,
+      feedback:
+        'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Alias cumque nihil atque quae inventore. Aliquam cupiditate repudiandae suscipit corporis natus.',
+    },
+    {
+      userId,
+      feedback:
+        'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Alias cumque nihil atque quae inventore. Aliquam cupiditate repudiandae suscipit corporis natus.',
+    },
+    {
+      userId,
+      feedback:
+        'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Alias cumque nihil atque quae inventore. Aliquam cupiditate repudiandae suscipit corporis natus.',
+    },
+    {
+      userId,
+      feedback:
+        'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Alias cumque nihil atque quae inventore. Aliquam cupiditate repudiandae suscipit corporis natus.',
     },
   ]
 }

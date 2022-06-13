@@ -12,6 +12,7 @@ type FieldsetProps = {
   form?: string
   className?: string
   placeholder?: string
+  required?: boolean
 }
 
 export const Fieldset = forwardRef(
@@ -26,6 +27,7 @@ export const Fieldset = forwardRef(
       form,
       className,
       placeholder,
+      required,
     }: FieldsetProps,
     ref: React.ForwardedRef<HTMLInputElement>
   ) => {
@@ -49,6 +51,7 @@ export const Fieldset = forwardRef(
               id: name,
               autoComplete,
               placeholder,
+              required,
             })}
             className={`block w-full appearance-none rounded-md border ${
               error ? 'border-red-500' : 'border-gray-300'

@@ -27,12 +27,20 @@ export const adminMenuItems: MenuItem[] = [
     label: 'Sales',
     route: '/sales',
   },
+  {
+    label: 'Customer Feedbacks',
+    route: '/customer-feedback',
+  },
 ]
 
 export const customerMenuItems: MenuItem[] = [
   {
     label: 'Order History',
     route: '/order-history',
+  },
+  {
+    label: 'Submit Feedback',
+    route: '/submit-feedback',
   },
 ]
 
