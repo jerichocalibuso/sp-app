@@ -197,7 +197,7 @@ export default function Example() {
           : 'decrease',
     },
     {
-      name: 'Average Completed Order Count',
+      name: 'Monthly Completed Order Count',
       stat: currentMonthCount,
       previousStat: previousMonthCount,
       change: ((currentMonthCount / previousMonthCount) * 100).toFixed(2),
@@ -207,7 +207,7 @@ export default function Example() {
           : 'decrease',
     },
     {
-      name: 'Average Order Completion Rate',
+      name: 'Monthly Order Completion Rate',
       stat: `${currentCompletionRate}%`,
       previousStat: `${previousCompletionRate}%`,
       change: (currentCompletionRate - previousCompletionRate).toFixed(2),
