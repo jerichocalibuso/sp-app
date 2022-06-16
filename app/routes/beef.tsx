@@ -125,7 +125,7 @@ export const action: ActionFunction = async ({ request }) => {
       })
     }
     session.set('orderItems', orderItems)
-    return redirect('/products', {
+    return redirect('/beef', {
       headers: {
         'Set-Cookie': await commitSession(session),
       },
