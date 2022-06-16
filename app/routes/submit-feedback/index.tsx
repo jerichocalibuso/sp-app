@@ -40,10 +40,9 @@ export const action: ActionFunction = async ({ request }) => {
         userId: user?.id || '',
       },
     })
-    return redirect('/submit-feedback/success')
   }
 
-  return null
+  return redirect('/submit-feedback/success')
 }
 
 export default function OrderDetailsPage() {
