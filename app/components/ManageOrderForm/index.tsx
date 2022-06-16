@@ -94,7 +94,7 @@ export default function ManageUsersForm({
                               name='name'
                               label='Name'
                               type='text'
-                              value={selectedUser?.name || ''}
+                              defaultValue={selectedUser?.name || ''}
                               autoComplete='name'
                               className={`${
                                 loaderData?.error?.message && 'border-red-500'

@@ -10,6 +10,12 @@ import {
 export const db = new PrismaClient()
 
 async function seed() {
+  await db.address.deleteMany()
+  await db.feedback.deleteMany()
+  await db.order.deleteMany()
+  await db.orderItem.deleteMany()
+  await db.product.deleteMany()
+  await db.user.deleteMany()
   const products = getProducts()
   await db.product.createMany({ data: products })
   const users = getUsers()
