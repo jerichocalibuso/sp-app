@@ -18,26 +18,6 @@ export const loader: LoaderFunction = async ({ params, request }) => {
   return null
 }
 
-export const action: ActionFunction = async ({ request }) => {
-  const user = await authenticator.isAuthenticated(request)
-
-  if (!user?.role) {
-    return redirect('/signin')
-  }
-
-  if (user?.role !== Role.CUSTOMER) {
-    return redirect('/unauthorized')
-  }
-
-  const formData = await request.formData()
-  const feedback = formData.get('feedback') as string
-
-  if (feedback) {
-  }
-
-  return redirect('')
-}
-
 export default function OrderDetailsPage() {
   return (
     <div className='bg-white'>
