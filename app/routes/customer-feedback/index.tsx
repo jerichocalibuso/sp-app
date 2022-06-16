@@ -2,8 +2,7 @@ import { Feedback, Status, User } from '@prisma/client'
 import { LoaderFunction } from '@remix-run/node'
 import { db } from '~/utils/db.server'
 import { useNavigate } from 'react-router'
-import { useLoaderData, useSearchParams } from '@remix-run/react'
-import { Link } from 'react-router-dom'
+import { useLoaderData, useSearchParams, Link } from '@remix-run/react'
 
 interface FeedbackData extends Feedback {
   User: User

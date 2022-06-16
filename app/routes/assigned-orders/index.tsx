@@ -10,8 +10,7 @@ import {
 import { LoaderFunction, redirect } from '@remix-run/node'
 import { db } from '~/utils/db.server'
 import { useNavigate } from 'react-router'
-import { useLoaderData, useSearchParams } from '@remix-run/react'
-import { Link } from 'react-router-dom'
+import { useLoaderData, useSearchParams, Link } from '@remix-run/react'
 import { authenticator } from '~/services/auth.server'
 
 interface OrderItemData extends OrderItem {

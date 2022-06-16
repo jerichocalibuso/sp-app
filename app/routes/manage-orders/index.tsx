@@ -9,8 +9,7 @@ import {
 import { LoaderFunction } from '@remix-run/node'
 import { db } from '~/utils/db.server'
 import { useNavigate } from 'react-router'
-import { Outlet, useLoaderData, useSearchParams } from '@remix-run/react'
-import { Link } from 'react-router-dom'
+import { Outlet, useLoaderData, useSearchParams, Link } from '@remix-run/react'
 
 interface OrderItemData extends OrderItem {
   product: Product
