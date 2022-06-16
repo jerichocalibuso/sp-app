@@ -31,7 +31,7 @@ export const action: ActionFunction = async ({ request }) => {
   }
 
   const formData = await request.formData()
-  const feedback = formData.get('feedback') as string
+  const feedback = (formData.get('feedback') as string) || ''
 
   if (feedback) {
     await db.feedback.create({
