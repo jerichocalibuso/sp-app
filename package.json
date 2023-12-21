@@ -21,8 +21,10 @@
     "@headlessui/react": "^1.6.4",
     "@heroicons/react": "^1.0.6",
     "@prisma/client": "^3.10.0",
+    "@remix-run/dev": "^1.2.2",
     "@remix-run/node": "^1.5.1",
     "@remix-run/react": "^1.5.1",
+    "@remix-run/serve": "^1.2.2",
     "@remix-run/vercel": "^1.2.2",
     "@remix-validated-form/with-zod": "^2.0.1",
     "@types/uuid": "^8.3.4",
@@ -32,8 +34,8 @@
     "lodash": "^4.17.21",
     "nprogress": "^0.2.0",
     "pm2": "^5.3.0",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "react-dropzone": "^12.0.5",
     "react-router": "^6.3.0",
     "recharts": "^2.1.10",
@@ -45,9 +47,7 @@
     "tiny-invariant": "^1.2.0",
     "uuid": "^8.3.2",
     "zod": "^3.12.0",
-    "zod-form-data": "^1.2.0",
-    "@remix-run/dev": "^1.2.2",
-    "@remix-run/serve": "^1.2.2"
+    "zod-form-data": "^1.2.0"
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.0",
