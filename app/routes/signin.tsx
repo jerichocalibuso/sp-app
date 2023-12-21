@@ -108,7 +108,10 @@ export const SocialsButton: React.FC<SocialsButtonProps> = ({
   label,
 }) => (
   <Form action={`/auth/${provider}`} method='post'>
-    <button className='inline-flex w-full justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50'>
+    <button
+      disabled
+      className='inline-flex w-full cursor-not-allowed justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-500 shadow-sm hover:bg-gray-50'
+    >
       <span className='sr-only'>{label}</span>
       {provider === SocialsProvider.FACEBOOK ? (
         <FacebookIcon />
@@ -155,7 +158,7 @@ export default function Example() {
               <div>
                 <div>
                   <p className='text-sm font-medium text-gray-700'>
-                    Sign in with
+                    Sign in with (OAuth temporarily disabled)
                   </p>
 
                   <div className='mt-1 grid grid-cols-2 gap-3'>
